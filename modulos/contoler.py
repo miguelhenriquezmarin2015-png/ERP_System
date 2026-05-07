@@ -1,5 +1,4 @@
 import sqlite3 as sql
-import inventario.py
 def createDB_Inventario():
     conn = sql.connect('negocio.db')
     cursor = conn.cursor()
@@ -14,7 +13,23 @@ def createDB_Inventario():
 def insertar_inventario(nombre,cantidad,precio):
     conn = sql.connect('negocio.db')
     cursor = conn.cursor()
-    instruccion=f"INSERT INTO inventario (nombre, cantidad, precio) VALUES ('{get_nombre()}')"
-    cursor.execute(*instruccion)
+    instruccion=f"INSERT INTO inventario (nombre, cantidad, precio) VALUES ('{nombre}', {cantidad}, {precio})"
+    cursor.execute(instruccion)
+    conn.commit()
+    conn.close()
+
+def mostrar_inventario_baja_cantidad():
+    conn = sql.connect('negocio.db')
+    cursor = conn.cursor()
+    cursor.execute("SELECT * FROM inventario WHERE cantidad < 15")
+    resultado = cursor.fetchall()
+    conn.close()
+    return resultado
+
+def update_inventario(id,cantidad):
+    conn = sql.connect('negocio.db')
+    cursor = conn.cursor()
+    instruccion=f"UPDATE inventario SET cantidad={cantidad} WHERE id={id}"
+    cursor.execute(instruccion)
     conn.commit()
     conn.close()
