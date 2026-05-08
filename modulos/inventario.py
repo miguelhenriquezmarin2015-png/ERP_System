@@ -1,3 +1,4 @@
+import controler
 class Inventario:
     def __init__(self,_id,_nombre,_cantidad,_precio):
         self.id=_id
@@ -13,8 +14,7 @@ class Inventario:
     def get_precio(self):
         return self.precio
     def get_precio(self,id):
-        if self.id == id:
-            return self.precio
-        else:
-            return None
-    
+        controler.mostar_id()
+    def get_cantidadbaja(self):
+        controler.mostrar_inventario_baja_cantidad()
+        
