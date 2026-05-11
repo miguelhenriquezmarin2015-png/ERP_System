@@ -1,4 +1,4 @@
-from manager import Manager
+from especialidades.manager import Manager
 
 if __name__=="__main__":
     app=Manager()
