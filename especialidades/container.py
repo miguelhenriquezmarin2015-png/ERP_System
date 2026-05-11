@@ -1,0 +1,29 @@
+from tkinter import *
+from tkinter import tk
+import sys
+import os
+sys.path.append("..")
+from modulos import Ventas,Inventario,Pedido,Proveedor,Informacion
+
+class Container(tk.Frame):
+    def __init__(self, padre, controller):
+        super().__init__(padre)
+        self.controller = controller
+        self.pack()
+        self.place(x=0, y=0, width=1200, height=700)
+        self.widgets()
+        self.frames={}
+        self.buttons=[]
+        for i in(Ventas,Inventario,Pedido,Proveedor,Informacion):
+            frame=i(self)
+            self.frames[i]=frame
+            frame.pack()
+            frame.config(bg="#C6D9E3",hightlightbackground="gray",highlightthickness=1)
+            frame.place(x=0,y=40,width=1100,height=660)
+        self.show_frame(Ventas)
+    def show_frame(self, container):
+        frame=self.frames[container]
+        frame.tkraise()
+
+    def widgets(self):
+        pass

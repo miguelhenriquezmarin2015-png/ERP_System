@@ -21,7 +21,8 @@ def insertar_inventario(nombre,cantidad,precio):
 def mostar_id(id):
     conn = sql.connect('negocio.db')
     cursor = conn.cursor()
-    cursor.execute("SELECT * FROM inventario where id={id}")
+    instruccion=f"SELECT * FROM inventario where id={id}"
+    cursor.execute(instruccion)
     resultado = cursor.fetchall()
     conn.close()
     return resultado
