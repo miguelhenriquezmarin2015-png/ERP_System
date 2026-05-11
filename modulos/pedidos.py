@@ -1,5 +1,5 @@
 from tkinter import *
-from tkinter import tk
+import tkinter as tk
 
 class Pedidos(tk.Frame):
     def __init__(self, padre):

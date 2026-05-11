@@ -1,6 +1,6 @@
-import controler
+#import controler
 from tkinter import *
-from tkinter import tk
+import tkinter as tk
 
 class Inventario(tk.Frame):
     def __init__(self, padre):

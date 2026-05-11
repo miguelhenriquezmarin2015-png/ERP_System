@@ -1,5 +1,5 @@
 from tkinter import *
-from tkinter import ttk
+import tkinter as tk
 import sys
 import os
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
@@ -12,7 +12,7 @@ from modulos.inventario import Inventario
 
 
 
-class Container(ttk.Frame):
+class Container(tk.Frame):
     def __init__(self, padre, controller):
         super().__init__(padre)
         self.controller = controller
@@ -28,8 +28,8 @@ class Container(ttk.Frame):
             frame.pack()
             frame.config(bg="#C6D9E3",hightlightbackground="gray",highlightthickness=1)
             frame.place(x=0,y=40,width=1100,height=660)
-        self.show_frame(Ventas)
-    def show_frame(self, container):
+        self.show_frames(Ventas)
+    def show_frames(self, container):
         frame=self.frames[container]
         frame.tkraise()
 

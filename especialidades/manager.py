@@ -1,11 +1,11 @@
 from tkinter import *
-from tkinter import Tk
+from tkinter import ttk
 import sys
 import os
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 from modulos.login import Login
 from modulos.login import Registro
-from container import Container
+from especialidades.container import Container
 
 class Manager(Tk):
     def __init__(self, *args,**kwagrs):
@@ -19,17 +19,17 @@ class Manager(Tk):
         container.configure(bg="#C6D9E3")
 
         self.frames={}
-        for i in(Login,Registro, Container):
-            frame=i(container,self)
+        for i in(Login,Registro,Container):
+            frame=i(container, self)
             self.frames[i]=frame
         
         self.show_frame(Container)
 
-        self.style=Tk.Style()
+        self.style=ttk.Style()
         self.style.theme_use("clam")
     
     def show_frame(self,container):
-        frame=self.frames[container]
+        frame=self.frame[container]
         frame.tkraise()
 
 def main():
