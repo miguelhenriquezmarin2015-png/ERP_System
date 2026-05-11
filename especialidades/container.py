@@ -23,14 +23,14 @@ class Container(tk.Frame):
         self.buttons=[]
         # va aqui
         for i in(Ventas,Inventario,Clientes,Pedidos,Proveedor,Informacion):
-            frame=i(self)
+            frame=i(self,controller)
             self.frames[i]=frame
             frame.pack()
             frame.config(bg="#C6D9E3",hightlightbackground="gray",highlightthickness=1)
-            frame.place(x=0,y=40,width=1100,height=660)
+            frame.place(x=0,y=40,width=1100,height=650)
         self.show_frames(Ventas)
-    def show_frames(self, container):
-        frame=self.frames[container]
+    def show_frames(self, ventas_clase):
+        frame=self.frames[ventas_clase]
         frame.tkraise()
 
     def widgets(self):

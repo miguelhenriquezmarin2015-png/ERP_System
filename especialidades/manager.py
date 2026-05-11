@@ -19,17 +19,17 @@ class Manager(Tk):
         container.configure(bg="#C6D9E3")
 
         self.frames={}
-        for i in(Login,Registro,Container):
+        for i in(Login,Registro):
             frame=i(container, self)
             self.frames[i]=frame
         
-        self.show_frame(Container)
+        self.show_frame(Login)
 
         self.style=ttk.Style()
         self.style.theme_use("clam")
     
     def show_frame(self,container):
-        frame=self.frame[container]
+        frame=self.frames[container]
         frame.tkraise()
 
 def main():
