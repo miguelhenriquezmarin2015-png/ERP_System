@@ -1,7 +1,8 @@
 from tkinter import *
-from tkinter import tk
+from tkinter import Tk
+from tkinter import ttk
 
-class Login(tk.Frame):
+class Login(ttk.Frame):
     def __init__(self, padre, controller):
         super().__init__(padre)
         self.controller = controller
@@ -10,7 +11,7 @@ class Login(tk.Frame):
     def widgets(self):
         pass
 
-class Registro(tk.Frame):
+class Registro(ttk.Frame):
     def __init__(self, padre,controller):
         super().__init__(padre)
         self.controller=controller

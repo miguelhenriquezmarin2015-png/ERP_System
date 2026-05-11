@@ -1,11 +1,11 @@
 from tkinter import *
-from tkinter import ttk
-from container import Container
+from tkinter import Tk
 import sys
-import os 
-sys.path.append("..")
+import os
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 from modulos.login import Login
 from modulos.login import Registro
+from container import Container
 
 class Manager(Tk):
     def __init__(self, *args,**kwagrs):
@@ -25,7 +25,7 @@ class Manager(Tk):
         
         self.show_frame(Container)
 
-        self.style=ttk.Style()
+        self.style=Tk.Style()
         self.style.theme_use("clam")
     
     def show_frame(self,container):

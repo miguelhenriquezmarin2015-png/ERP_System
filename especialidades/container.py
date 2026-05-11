@@ -1,14 +1,15 @@
 from tkinter import *
 from tkinter import ttk
 import sys
-sys.path.append("..")
+import os
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 from modulos.informacion import Informacion
 from modulos.pedidos import Pedidos
 from modulos.proveedor import Proveedor
 from modulos.clientes import Clientes
 from modulos.ventas import Ventas
 from modulos.inventario import Inventario
-import os
+
 
 
 class Container(ttk.Frame):
