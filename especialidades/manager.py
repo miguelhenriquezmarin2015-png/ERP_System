@@ -1,10 +1,11 @@
 from tkinter import *
 from tkinter import ttk
-from login import Login
-from login import Registro
 from container import Container
 import sys
 import os 
+sys.path.append("..")
+from modulos.login import Login
+from modulos.login import Registro
 
 class Manager(Tk):
     def __init__(self, *args,**kwagrs):
@@ -18,7 +19,7 @@ class Manager(Tk):
         container.configure(bg="#C6D9E3")
 
         self.frames={}
-        for i in(Container):
+        for i in(Login,Registro, Container):
             frame=i(container,self)
             self.frames[i]=frame
         

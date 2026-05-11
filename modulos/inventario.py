@@ -1,5 +1,15 @@
 import controler
-class Inventario:
+from tkinter import *
+from tkinter import tk
+
+class Inventario(tk.Frame):
+    def __init__(self, padre):
+        super().__init__(padre)
+        self.widgets()
+
+    def widgets(self):
+        pass
+"""class Inventario:
     def __init__(self,_id,_nombre,_cantidad,_precio):
         self.id=_id
         self.nombre=_nombre
@@ -17,4 +27,4 @@ class Inventario:
         controler.mostar_id()
     def get_cantidadbaja(self):
         controler.mostrar_inventario_baja_cantidad()
-        
+        """

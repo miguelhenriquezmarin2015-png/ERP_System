@@ -1,11 +1,12 @@
 from tkinter import *
-from tkinter import tk
+from tkinter import ttk
 import sys
 import os
 sys.path.append("..")
-from modulos import Ventas,Inventario,Pedido,Proveedor,Informacion
+from modulos.ventas import Ventas
+from modulos.inventario import Inventario
 
-class Container(tk.Frame):
+class Container(ttk.Frame):
     def __init__(self, padre, controller):
         super().__init__(padre)
         self.controller = controller
@@ -14,7 +15,8 @@ class Container(tk.Frame):
         self.widgets()
         self.frames={}
         self.buttons=[]
-        for i in(Ventas,Inventario,Pedido,Proveedor,Informacion):
+        #,Pedido,Proveedor,Informacion va aqui
+        for i in(Ventas,Inventario):
             frame=i(self)
             self.frames[i]=frame
             frame.pack()
