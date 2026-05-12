@@ -26,7 +26,7 @@ class Manager(Tk):
             container.grid_rowconfigure(0, weight=1)
             container.grid_columnconfigure(0, weight=1)
         
-        self.show_frame(Container)
+        self.show_frame(Login)
 
         self.style=ttk.Style()
         self.style.theme_use("clam")
