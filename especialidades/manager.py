@@ -19,11 +19,14 @@ class Manager(Tk):
         container.configure(bg="#C6D9E3")
 
         self.frames={}
-        for i in(Login,Registro):
+        for i in(Login,Registro,Container):
             frame=i(container, self)
             self.frames[i]=frame
+            frame.grid(row=0,column=0,sticky="nsew")
+            container.grid_rowconfigure(0, weight=1)
+            container.grid_columnconfigure(0, weight=1)
         
-        self.show_frame(Login)
+        self.show_frame(Container)
 
         self.style=ttk.Style()
         self.style.theme_use("clam")

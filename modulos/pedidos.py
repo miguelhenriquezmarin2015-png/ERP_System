@@ -2,8 +2,9 @@ from tkinter import *
 import tkinter as tk
 
 class Pedidos(tk.Frame):
-    def __init__(self, padre):
+    def __init__(self, padre,controller):
         super().__init__(padre)
+        self.controller=controller
         self.widgets()
 
     def widgets(self):

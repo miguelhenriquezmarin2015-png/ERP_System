@@ -11,9 +11,9 @@ class Login(tk.Frame):
         pass
 
 class Registro(tk.Frame):
-    def __init__(self, padre,controler):
+    def __init__(self, padre,controller):
         super().__init__(padre)
-        self.controler=controler
+        self.controller=controller
         self.widgets()
 
     def widgets(self):
