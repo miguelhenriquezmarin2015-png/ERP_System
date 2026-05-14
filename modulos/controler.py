@@ -61,9 +61,9 @@ def validacion(user,pas):
     cursor = conn.cursor()
     instruccion="SELECT * FROM usuarios where username=? and password=?"
     cursor.execute(instruccion, (user, pas))
-    resultado = cursor.fetchall()
+    resultado = cursor.fetchone()
     conn.close()
-    return resultado
+    return resultado is not None
 
 
 #createDB_Inventario()
