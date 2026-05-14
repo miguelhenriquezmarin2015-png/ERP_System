@@ -3,8 +3,8 @@ from tkinter import ttk,messagebox
 from PIL import Image, ImageTk
 import sys 
 import os
-from modulos.ventas import Ventas
-from modulos import controler
+from especialidades.container import Container
+from modulos.controlador import validacion
 
 # --- CLASE BASE (LÓGICA COMPARTIDA) ---
 class PantallaBase(tk.Frame):
@@ -78,20 +78,23 @@ class Login(PantallaBase):
         # Este botón ahora nos lleva a la clase Registro
         """tk.Button(frame_login, text="REGISTRARSE", bg="#4CAF50", fg="white", font="arial 12 bold", bd=0, cursor="hand2",
                   command=lambda: self.controller.show_frame(Registro)).place(x=70, y=400, width=260, height=45)"""
+        
     def login(self):
-        user=self.username.get().strip()
-        pas=self.password.get().strip()
-
-        if not user or not pas:
+        
+        self.user = self.ent_u.get().strip()
+        self.pas = self.ent_p.get().strip()
+    
+        if not self.user or not self.pas:
             tk.messagebox.showwarning("Campos vacíos", "Por favor, llene todos los campos.")
             return
-
-        resultado = self.controller.validacion(user, pas)
-            
+        
+        resultado = self.validacion(self.user, self.pas)
+    
         if resultado:
-            self.controller.show_frame(Ventas)  # Reemplaza Principal con la pantalla que deseas mostrar después del login
+            self.controller.show_frame(Container) 
         else:
             tk.messagebox.showerror("Error", "Usuario o contraseña incorrectos")
+
 
 # --- CLASE REGISTRO ---
 class Registro(PantallaBase):
