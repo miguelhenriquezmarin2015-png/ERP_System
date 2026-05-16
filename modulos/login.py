@@ -135,6 +135,6 @@ class Registro(PantallaBase):
         # Botón para registrar
         tk.Button(frame_reg, text="CONFIRMAR REGISTRO", bg="#4CAF50", fg="white", font="arial 12 bold", bd=0, cursor="hand2").place(x=70, y=360, width=260, height=45)
 
-        # Botón para regresar si ya tienes cuenta
+        """ # Botón para regresar si ya tienes cuenta
         tk.Button(frame_reg, text="¿Ya tienes cuenta? Inicia sesión", font="arial 10", bg="white", fg="#2196F3", bd=0, cursor="hand2",
-                  command=lambda: self.controller.show_frame(Login)).place(x=70, y=430, width=260)
+                  command=lambda: self.controller.show_frame(Login)).place(x=70, y=430, width=260)"""

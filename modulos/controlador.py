@@ -6,20 +6,20 @@ def createDB_Inventario():
     cursor.execute("""CREATE TABLE IF NOT EXISTS inventario
                  (id INTEGER PRIMARY KEY AUTOINCREMENT,
                   nombre TEXT NOT NULL,
-                  cantidad INTEGER NOT NULL,
-                  precio REAL NOT NULL)""")
+                  precio REAL NOT NULL,
+                  stock INTEGER NOT NULL)""")
     conn.commit()
     conn.close()
 
-def insertar_inventario(nombre,cantidad,precio):
+def guardar_articulo(nombre,precio,stock):
     conn = sql.connect('negocio.db')
     cursor = conn.cursor()
-    instruccion="INSERT INTO inventario (nombre, cantidad, precio) VALUES (?,?,?)"
-    cursor.execute(instruccion, (nombre, cantidad, precio))
+    instruccion="INSERT INTO inventario (nombre, precio, stock) VALUES (?,?,?)"
+    cursor.execute(instruccion, (nombre, precio, stock))
     conn.commit()
     conn.close()
 
-def mostar_id(id):
+def mostrar_id(id):
     conn = sql.connect('negocio.db')
     cursor = conn.cursor()
     instruccion="SELECT * FROM inventario where id=?"
@@ -28,26 +28,42 @@ def mostar_id(id):
     conn.close()
     return resultado
 
+def obtener_articulos():
+    conn = sql.connect("negocio.db")
+    cursor = conn.cursor()
+    cursor.execute("SELECT id, nombre, precio, stock FROM inventario")
+    articulos = cursor.fetchall()
+    conn.close()
+    return articulos
+
 def mostrar_inventario_baja_cantidad():
     conn = sql.connect('negocio.db')
     cursor = conn.cursor()
-    cursor.execute("SELECT * FROM inventario WHERE cantidad < 15")
+    cursor.execute("SELECT * FROM inventario WHERE stock < 15")
     resultado = cursor.fetchall()
     conn.close()
     return resultado
 
-def update_inventario(id,cantidad):
+def editar_articulo(id,stock):
     conn = sql.connect('negocio.db')
     cursor = conn.cursor()
-    instruccion="UPDATE inventario SET cantidad=? WHERE id=?"
-    cursor.execute(instruccion, (cantidad, id))
+    instruccion="UPDATE inventario SET stock=? WHERE id=?"
+    cursor.execute(instruccion, (stock, id))
+    conn.commit()
+    conn.close()
+    
+def eliminar_articulo(id):
+    conn = sql.connect('negocio.db')
+    cursor = conn.cursor()
+    instruccion="DELETE FROM inventario WHERE id=?"
+    cursor.execute(instruccion, (id,))
     conn.commit()
     conn.close()
 
 #usuario-----
 
 def createDB_Usuario():
-    conn = sql.connect('usuario.db')
+    conn = sql.connect('negocio.db')
     cursor = conn.cursor()
     cursor.execute("""CREATE TABLE IF NOT EXISTS usuarios
                  (id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -57,7 +73,7 @@ def createDB_Usuario():
     conn.close()
 
 def validacion(user,pas):
-    conn = sql.connect('usuario.db')
+    conn = sql.connect('negocio.db')
     cursor = conn.cursor()
     instruccion="SELECT * FROM usuarios where username=? and password=?"
     cursor.execute(instruccion, (user, pas))
