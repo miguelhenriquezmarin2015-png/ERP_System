@@ -36,6 +36,16 @@ def obtener_articulos():
     conn.close()
     return articulos
 
+def buscar_articulo(nombre):
+    conn = sql.connect('negocio.db')
+    cursor = conn.cursor()
+    instruccion="SELECT * FROM inventario where nombre LIKE ?"
+    termino_busqueda = f"%{nombre}%"
+    cursor.execute(instruccion, (termino_busqueda,))
+    resultado = cursor.fetchall()
+    conn.close()
+    return resultado
+
 def mostrar_inventario_baja_cantidad():
     conn = sql.connect('negocio.db')
     cursor = conn.cursor()

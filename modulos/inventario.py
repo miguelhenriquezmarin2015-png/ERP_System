@@ -37,7 +37,10 @@ class Inventario(tk.Frame):
 
         self.combobox_buscar=ttk.Combobox(frame_buscar,font="arial 12",)
         self.combobox_buscar.place(x=10,y=5,width=250,height=40 )
+        self.combobox_buscar.bind("<<ComboboxSelected>>",self.buscar_articulo)
+        self.combobox_buscar.bind("<KeyRelease>", self.buscar_articulo)
         self.cargar_articulos()
+
 #obsiones
         lblframe_botones=LabelFrame(self,text="OPCIONES",font="arial 14 bold",bg="#C6D9E3")
         lblframe_botones.place(x=10,y=250,width=280,height=180)
@@ -100,13 +103,18 @@ class Inventario(tk.Frame):
         tk.Button(top,text="Guardar",font="arial 12 bold",command=guardar).place(x=40, y=200,width=130,height=40)
         tk.Button(top,text="Cancelar",font="arial 12 bold",command=top.destroy).place(x=240, y=200,width=130,height=40)
 
-#la parte que muestra
-    def cargar_articulos(self):
+    def buscar_articulo(self,event=None):
+        nombre=self.combobox_buscar.get()
+        resultado=ctrl.buscar_articulo(nombre)
+        self.cargar_articulos(resultado)
+
+    def cargar_articulos(self, datos=None):
+    # 1. Limpiar todos los elementos visuales previos en el frame
         for widget in self.scrollbar_frame.winfo_children():
             widget.destroy()
-
-
-        headers = ["ID","Nombre","Precio", "Stock"]
+            
+        # 2. Dibujar los encabezados de la tabla
+        headers = ["ID", "Nombre", "Precio", "Stock"]
         for col_idx, text in enumerate(headers):
             lbl_header = tk.Label(
                 self.scrollbar_frame,
@@ -117,14 +125,20 @@ class Inventario(tk.Frame):
                 relief="groove",
                 padx=10,
                 pady=5
-        )
+            )
             lbl_header.grid(row=0, column=col_idx, sticky="nsew")
-            articulos=ctrl.obtener_articulos()
+            
+        # 3. COMBINACIÓN: Determinar el origen de los productos
+        if datos is not None:
+            articulos = datos  # Si viene de la búsqueda ("pasta")
+        else:
+            articulos = ctrl.obtener_articulos()  # Carga inicial de todo el inventario
 
+        # 4. Dibujar las filas de datos con tu efecto cebra
         for row_idx, art in enumerate(articulos, start=1):
-            # Efecto cebra: alterna colores de fondo para facilitar la lectura
+            # Alterna colores de fondo para facilitar la lectura
             color_fila = "#E1EBF0" if row_idx % 2 == 0 else "#F4F8FA"
-
+            
             for col_idx, valor in enumerate(art):
                 lbl_dato = tk.Label(
                     self.scrollbar_frame,
@@ -137,7 +151,8 @@ class Inventario(tk.Frame):
                 )
                 lbl_dato.grid(row=row_idx, column=col_idx, sticky="nsew")
 
-            self.scrollbar_frame.grid_columnconfigure(0, weight=1)
-            self.scrollbar_frame.grid_columnconfigure(1, weight=5)
-            self.scrollbar_frame.grid_columnconfigure(2, weight=2) 
-            self.scrollbar_frame.grid_columnconfigure(3, weight=2)
+        # 5. EL RESTO DE LA FUNCIÓN: Configurar el comportamiento elástico de las columnas
+        self.scrollbar_frame.grid_columnconfigure(0, weight=1)
+        self.scrollbar_frame.grid_columnconfigure(1, weight=5)
+        self.scrollbar_frame.grid_columnconfigure(2, weight=2)
+        self.scrollbar_frame.grid_columnconfigure(3, weight=2)
