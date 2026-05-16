@@ -19,15 +19,6 @@ def guardar_articulo(nombre,precio,stock):
     conn.commit()
     conn.close()
 
-def mostrar_id(id):
-    conn = sql.connect('negocio.db')
-    cursor = conn.cursor()
-    instruccion="SELECT * FROM inventario where id=?"
-    cursor.execute(instruccion, (id,))
-    resultado = cursor.fetchall()
-    conn.close()
-    return resultado
-
 def obtener_articulos():
     conn = sql.connect("negocio.db")
     cursor = conn.cursor()
@@ -54,11 +45,20 @@ def mostrar_inventario_baja_cantidad():
     conn.close()
     return resultado
 
-def editar_articulo(id,stock):
+def obtener_articulo_por_id(id):
     conn = sql.connect('negocio.db')
     cursor = conn.cursor()
-    instruccion="UPDATE inventario SET stock=? WHERE id=?"
-    cursor.execute(instruccion, (stock, id))
+    instruccion = "SELECT id, nombre, precio, stock FROM inventario WHERE id = ?"
+    cursor.execute(instruccion, (id,))
+    resultado = cursor.fetchone() 
+    conn.close()
+    return resultado
+
+def actualizar_articulo(id, nombre, precio, stock):
+    conn = sql.connect('negocio.db')
+    cursor = conn.cursor()
+    instruccion = "UPDATE inventario SET nombre = ?, precio = ?, stock = ? WHERE id = ?"
+    cursor.execute(instruccion, (nombre, precio, stock, id))
     conn.commit()
     conn.close()
     
@@ -91,6 +91,12 @@ def validacion(user,pas):
     conn.close()
     return resultado is not None
 
-
-#createDB_Inventario()
-#createDB_Usuario()
+def buscar_usuario(username):
+    conn = sql.connect('negocio.db')
+    cursor = conn.cursor()
+    instruccion="SELECT * FROM usuarios where username=?"
+    termino_busqueda = f"%{username}%"
+    cursor.execute(instruccion, (termino_busqueda,))
+    resultado = cursor.fetchone()
+    conn.close()
+    return resultado

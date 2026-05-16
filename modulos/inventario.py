@@ -35,9 +35,8 @@ class Inventario(tk.Frame):
         frame_buscar=LabelFrame(self,text="BUSCAR",font="arial 14 bold",bg="#C6D9E3")
         frame_buscar.place(x=10,y=10,width=280,height=80)
 
-        self.combobox_buscar=ttk.Combobox(frame_buscar,font="arial 12",)
+        self.combobox_buscar=ttk.Entry(frame_buscar,font="arial 12",)
         self.combobox_buscar.place(x=10,y=5,width=250,height=40 )
-        self.combobox_buscar.bind("<<ComboboxSelected>>",self.buscar_articulo)
         self.combobox_buscar.bind("<KeyRelease>", self.buscar_articulo)
         self.cargar_articulos()
 
@@ -48,10 +47,10 @@ class Inventario(tk.Frame):
         bt1=tk.Button(lblframe_botones,text="AGREGAR",font="arial 12 bold",bg="#9FB8C7",fg="black",command=self.agregar_articulo)
         bt1.place(x=10,y=10,width=250,height=40)
 
-        bt2=tk.Button(lblframe_botones,text="EDITAR",font="arial 12 bold",bg="#9FB8C7",fg="black")
+        bt2=tk.Button(lblframe_botones,text="EDITAR",font="arial 12 bold",bg="#9FB8C7",fg="black", command=self.editar_producto)
         bt2.place(x=10,y=50,width=250,height=40)
 
-        bt3=tk.Button(lblframe_botones,text="ELIMINAR",font="arial 12 bold",bg="#9FB8C7",fg="black")
+        bt3=tk.Button(lblframe_botones,text="ELIMINAR",font="arial 12 bold",bg="#9FB8C7",fg="black",command=self.eliminar_producto)
         bt3.place(x=10,y=90,width=250,height=40)
     
     def agregar_articulo(self):
@@ -109,11 +108,10 @@ class Inventario(tk.Frame):
         self.cargar_articulos(resultado)
 
     def cargar_articulos(self, datos=None):
-    # 1. Limpiar todos los elementos visuales previos en el frame
+    # Limpiar todos los elementos visuales previos en el frame
         for widget in self.scrollbar_frame.winfo_children():
             widget.destroy()
             
-        # 2. Dibujar los encabezados de la tabla
         headers = ["ID", "Nombre", "Precio", "Stock"]
         for col_idx, text in enumerate(headers):
             lbl_header = tk.Label(
@@ -128,15 +126,12 @@ class Inventario(tk.Frame):
             )
             lbl_header.grid(row=0, column=col_idx, sticky="nsew")
             
-        # 3. COMBINACIÓN: Determinar el origen de los productos
         if datos is not None:
-            articulos = datos  # Si viene de la búsqueda ("pasta")
+            articulos = datos 
         else:
-            articulos = ctrl.obtener_articulos()  # Carga inicial de todo el inventario
+            articulos = ctrl.obtener_articulos() 
 
-        # 4. Dibujar las filas de datos con tu efecto cebra
         for row_idx, art in enumerate(articulos, start=1):
-            # Alterna colores de fondo para facilitar la lectura
             color_fila = "#E1EBF0" if row_idx % 2 == 0 else "#F4F8FA"
             
             for col_idx, valor in enumerate(art):
@@ -151,8 +146,118 @@ class Inventario(tk.Frame):
                 )
                 lbl_dato.grid(row=row_idx, column=col_idx, sticky="nsew")
 
-        # 5. EL RESTO DE LA FUNCIÓN: Configurar el comportamiento elástico de las columnas
         self.scrollbar_frame.grid_columnconfigure(0, weight=1)
         self.scrollbar_frame.grid_columnconfigure(1, weight=5)
         self.scrollbar_frame.grid_columnconfigure(2, weight=2)
         self.scrollbar_frame.grid_columnconfigure(3, weight=2)
+    
+    def editar_producto(self):
+        #Obtener lo que sea que esté escrito en el buscador
+        texto_buscado = self.combobox_buscar.get().strip()
+        
+        if not texto_buscado:
+            messagebox.showerror("Error", "Escribe al menos una parte del nombre del producto a editar.")
+            return
+            
+        productos_encontrados = ctrl.buscar_articulo(texto_buscado)
+        
+        if not productos_encontrados:
+            messagebox.showerror("Error", f"No se encontró ningún producto que coincida con '{texto_buscado}'.")
+            return
+            
+        producto_exacto = productos_encontrados[0]
+        
+        id_prod, nombre_producto, pre_prod, st_prod = producto_exacto
+
+        vent_editar = tk.Toplevel(self)
+        vent_editar.title(f"Editar: {nombre_producto}")
+        vent_editar.geometry("400x300+150+50")
+        vent_editar.configure(bg="#C6D9E3")
+        vent_editar.resizable(False, False)
+        
+        tk.Label(vent_editar, text="Nombre:", font="arial 12 bold", bg="#C6D9E3").place(x=20, y=30)
+        ent_nombre = tk.Entry(vent_editar, font="arial 12")
+        ent_nombre.place(x=120, y=30, width=220)
+        ent_nombre.insert(0, nombre_producto) 
+
+        tk.Label(vent_editar, text="Precio:", font="arial 12 bold", bg="#C6D9E3").place(x=20, y=80)
+        ent_precio = tk.Entry(vent_editar, font="arial 12")
+        ent_precio.place(x=120, y=80, width=220)
+        ent_precio.insert(0, str(pre_prod)) 
+
+        tk.Label(vent_editar, text="Stock:", font="arial 12 bold", bg="#C6D9E3").place(x=20, y=130)
+        ent_stock = tk.Entry(vent_editar, font="arial 12")
+        ent_stock.place(x=120, y=130, width=220)
+        ent_stock.insert(0, str(st_prod)) 
+
+        def guardar_cambios():
+            nuevo_nom = ent_nombre.get().strip()
+            nuevo_pre = ent_precio.get().strip()
+            nuevo_st = ent_stock.get().strip()
+            
+            if not nuevo_nom or not nuevo_pre or not nuevo_st:
+                messagebox.showerror("Error", "Todos los campos son obligatorios.", parent=vent_editar)
+                return
+                
+            try:
+                ctrl.actualizar_articulo(id_prod, nuevo_nom, float(nuevo_pre), int(nuevo_st))
+                messagebox.showinfo("Éxito", "Producto actualizado correctamente.")
+                
+                vent_editar.destroy()      # Cierra la ventana flotante
+                self.cargar_articulos()    # Recarga la tabla de inmediato
+                
+            except ValueError:
+                messagebox.showerror("Error", "Precio o Stock inválidos. Ingresa números válidos.", parent=vent_editar)
+
+        # Botón para confirmar
+        btn_guardar = tk.Button(
+            vent_editar, 
+            text="GUARDAR CAMBIOS", 
+            font="arial 12 bold", 
+            bg="#9FB8C7", 
+            command=guardar_cambios
+        )
+        btn_guardar.place(x=100, y=200, width=200, height=40)
+    
+    def eliminar_producto(self):
+        # 1. Obtener lo escrito en el buscador
+        texto_buscado = self.combobox_buscar.get().strip()
+
+        if not texto_buscado:
+            messagebox.showerror(
+                "Error",
+                "Escribe al menos una parte del nombre del producto a eliminar.",
+            )
+            return
+
+        productos_encontrados = ctrl.buscar_articulo(texto_buscado)
+
+        if not productos_encontrados:
+            messagebox.showerror(
+                "Error",
+                f"No se encontró ningún producto que coincida con '{texto_buscado}'.",
+            )
+            return
+
+        # Tomamos el primer registro de la lista 
+        producto_exacto = productos_encontrados[0]
+        id_prod, nom_prod, pre_prod, st_prod = producto_exacto
+
+        confirmacion = messagebox.askyesno(
+            "Confirmar Eliminación",
+            f"¿Estás seguro de que deseas eliminar permanentemente el producto '{nom_prod}'?",
+        )
+
+        if confirmacion:
+            try:
+                ctrl.eliminar_articulo(id_prod)
+                messagebox.showinfo("Éxito", f"Producto '{nom_prod}' eliminado.")
+
+                self.combobox_buscar.delete(0, tk.END)
+                self.cargar_articulos()
+
+            except Exception as e:
+                messagebox.showerror(
+                    "Error", f"No se pudo eliminar el artículo: {e}"
+                )
+
