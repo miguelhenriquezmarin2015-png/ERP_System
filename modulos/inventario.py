@@ -1,4 +1,3 @@
-#import controler
 from tkinter import *
 import tkinter as tk
 from tkinter import ttk,messagebox,filedialog
@@ -42,16 +41,16 @@ class Inventario(tk.Frame):
 
 #obsiones
         lblframe_botones=LabelFrame(self,text="OPCIONES",font="arial 14 bold",bg="#C6D9E3")
-        lblframe_botones.place(x=10,y=250,width=280,height=180)
+        lblframe_botones.place(x=10,y=250,width=280,height=200)
 
-        bt1=tk.Button(lblframe_botones,text="AGREGAR",font="arial 12 bold",bg="#9FB8C7",fg="black",command=self.agregar_articulo)
+        bt1=tk.Button(lblframe_botones,text="AGREGAR",font="arial 12 bold",bg="#4CAF50",fg="white",command=self.agregar_articulo)
         bt1.place(x=10,y=10,width=250,height=40)
 
-        bt2=tk.Button(lblframe_botones,text="EDITAR",font="arial 12 bold",bg="#9FB8C7",fg="black", command=self.editar_producto)
-        bt2.place(x=10,y=50,width=250,height=40)
+        bt2=tk.Button(lblframe_botones,text="EDITAR",font="arial 12 bold",bg="#2196F3",fg="white", command=self.editar_producto)
+        bt2.place(x=10,y=60,width=250,height=40)
 
-        bt3=tk.Button(lblframe_botones,text="ELIMINAR",font="arial 12 bold",bg="#9FB8C7",fg="black",command=self.eliminar_producto)
-        bt3.place(x=10,y=90,width=250,height=40)
+        bt3=tk.Button(lblframe_botones,text="ELIMINAR",font="arial 12 bold",bg="#F44336",fg="white",command=self.eliminar_producto)
+        bt3.place(x=10,y=110,width=250,height=40)
     
     def agregar_articulo(self):
         top=tk.Toplevel(self)
@@ -70,34 +69,41 @@ class Inventario(tk.Frame):
         entry_producto=tk.Entry(top,font="arial 12")
         entry_producto.place(x=110,y=20,width=250,height=25)
 
+        costo=tk.Label(top,text="Costo:",font="arial 12 bold",bg="#C6D9E3")
+        costo.place(x=20,y=55,width=80,height=25)
+        entry_costo=tk.Entry(top,font="arial 12")
+        entry_costo.place(x=110,y=55,width=250,height=25)
+
         precio=tk.Label(top,text="Precio:",font="arial 12 bold",bg="#C6D9E3")
-        precio.place(x=20,y=55,width=80,height=25)
+        precio.place(x=20,y=90,width=80,height=25)
         entry_precio=tk.Entry(top,font="arial 12")
-        entry_precio.place(x=110,y=55,width=250,height=25)
+        entry_precio.place(x=110,y=90,width=250,height=25)
 
         stock=tk.Label(top,text="Stock:",font="arial 12 bold",bg="#C6D9E3")
-        stock.place(x=20,y=90,width=80,height=25)
+        stock.place(x=20,y=125,width=80,height=25)
         entry_stock=tk.Entry(top,font="arial 12")
-        entry_stock.place(x=110,y=90,width=250,height=25)
+        entry_stock.place(x=110,y=125,width=250,height=25)
 
         def guardar():
             producto=entry_producto.get()
+            costo=entry_costo.get()
             precio=entry_precio.get()
             stock=entry_stock.get()
 
-            if not producto or not precio or not stock:
+            if not producto or not costo or not precio or not stock:
                 messagebox.showerror("Error", "todos los campos deben ser llenados")
                 return
             
             try:
+                costo=float(costo)
                 precio=float(precio)
                 stock=int(stock)
-                ctrl.guardar_articulo(producto,precio,stock)
+                ctrl.guardar_articulo(producto,costo,precio,stock)
                 messagebox.showinfo("Exito","Producto agregado correctamente")
                 self.cargar_articulos()
                 top.destroy()
             except ValueError:
-                messagebox.showerror("Error","precio y stock deben ser numeros validos" )
+                messagebox.showerror("Error","costo, precio y stock deben ser numeros validos" )
         
         tk.Button(top,text="Guardar",font="arial 12 bold",command=guardar).place(x=40, y=200,width=130,height=40)
         tk.Button(top,text="Cancelar",font="arial 12 bold",command=top.destroy).place(x=240, y=200,width=130,height=40)
@@ -112,7 +118,7 @@ class Inventario(tk.Frame):
         for widget in self.scrollbar_frame.winfo_children():
             widget.destroy()
             
-        headers = ["ID", "Nombre", "Precio", "Stock"]
+        headers = ["ID", "Nombre","Costo", "Precio", "Stock"]
         for col_idx, text in enumerate(headers):
             lbl_header = tk.Label(
                 self.scrollbar_frame,
@@ -150,6 +156,7 @@ class Inventario(tk.Frame):
         self.scrollbar_frame.grid_columnconfigure(1, weight=5)
         self.scrollbar_frame.grid_columnconfigure(2, weight=2)
         self.scrollbar_frame.grid_columnconfigure(3, weight=2)
+        self.scrollbar_frame.grid_columnconfigure(4, weight=2)
     
     def editar_producto(self):
         #Obtener lo que sea que esté escrito en el buscador
@@ -167,7 +174,7 @@ class Inventario(tk.Frame):
             
         producto_exacto = productos_encontrados[0]
         
-        id_prod, nombre_producto, pre_prod, st_prod = producto_exacto
+        id_prod, nombre_producto, costo_prod, pre_prod, st_prod = producto_exacto
 
         vent_editar = tk.Toplevel(self)
         vent_editar.title(f"Editar: {nombre_producto}")
@@ -178,7 +185,12 @@ class Inventario(tk.Frame):
         tk.Label(vent_editar, text="Nombre:", font="arial 12 bold", bg="#C6D9E3").place(x=20, y=30)
         ent_nombre = tk.Entry(vent_editar, font="arial 12")
         ent_nombre.place(x=120, y=30, width=220)
-        ent_nombre.insert(0, nombre_producto) 
+        ent_nombre.insert(0, nombre_producto)
+
+        tk.Label(vent_editar, text="Costo:", font="arial 12 bold", bg="#C6D9E3").place(x=20, y=60)
+        ent_costo = tk.Entry(vent_editar, font="arial 12")
+        ent_costo.place(x=120, y=60, width=220)
+        ent_costo.insert(0, str(costo_prod))
 
         tk.Label(vent_editar, text="Precio:", font="arial 12 bold", bg="#C6D9E3").place(x=20, y=80)
         ent_precio = tk.Entry(vent_editar, font="arial 12")
@@ -192,22 +204,23 @@ class Inventario(tk.Frame):
 
         def guardar_cambios():
             nuevo_nom = ent_nombre.get().strip()
+            nuevo_costo = ent_costo.get().strip()
             nuevo_pre = ent_precio.get().strip()
             nuevo_st = ent_stock.get().strip()
             
-            if not nuevo_nom or not nuevo_pre or not nuevo_st:
+            if not nuevo_nom or not nuevo_costo or not nuevo_pre or not nuevo_st:
                 messagebox.showerror("Error", "Todos los campos son obligatorios.", parent=vent_editar)
                 return
                 
             try:
-                ctrl.actualizar_articulo(id_prod, nuevo_nom, float(nuevo_pre), int(nuevo_st))
+                ctrl.actualizar_articulo(id_prod, nuevo_nom, float(nuevo_costo), float(nuevo_pre), int(nuevo_st))
                 messagebox.showinfo("Éxito", "Producto actualizado correctamente.")
                 
                 vent_editar.destroy()      # Cierra la ventana flotante
                 self.cargar_articulos()    # Recarga la tabla de inmediato
                 
             except ValueError:
-                messagebox.showerror("Error", "Precio o Stock inválidos. Ingresa números válidos.", parent=vent_editar)
+                messagebox.showerror("Error", "Costo, Precio o Stock inválidos. Ingresa números válidos.", parent=vent_editar)
 
         # Botón para confirmar
         btn_guardar = tk.Button(
@@ -241,7 +254,7 @@ class Inventario(tk.Frame):
 
         # Tomamos el primer registro de la lista 
         producto_exacto = productos_encontrados[0]
-        id_prod, nom_prod, pre_prod, st_prod = producto_exacto
+        id_prod, nom_prod,costo_prod, pre_prod, st_prod = producto_exacto
 
         confirmacion = messagebox.askyesno(
             "Confirmar Eliminación",
@@ -260,4 +273,3 @@ class Inventario(tk.Frame):
                 messagebox.showerror(
                     "Error", f"No se pudo eliminar el artículo: {e}"
                 )
-

@@ -14,22 +14,31 @@ class Container(tk.Frame):
     def __init__(self, padre, controller):
         super().__init__(padre)
         self.controller = controller
-
+        
         self.frames={}
         self.buttons=[]
-
+        
         for i in(Ventas,Inventario,Clientes,Pedidos,Proveedor,Informacion):
             frame=i(self,controller)
             self.frames[i]=frame
             frame.config(bg="#C6D9E3",highlightbackground="gray",highlightthickness=1)
             frame.place(x=0,y=50,width=1200,height=650)
-
+            
         self.widgets()
+        #cambiar aqui al terminar
         self.show_frames(Ventas)
-
+        
+        controller.protocol("WM_DELETE_WINDOW", self.al_cerrar_programa)
+        
     def show_frames(self, ventas_clase):
         frame=self.frames[ventas_clase]
         frame.tkraise()
+        
+    def al_cerrar_programa(self):
+        instancia_ventas = self.frames.get(Ventas)
+        if instancia_ventas:
+            instancia_ventas.cancelar_toda_la_venta()
+        self.controller.destroy()
 
     def ventas(self):
         self.show_frames(Ventas)
