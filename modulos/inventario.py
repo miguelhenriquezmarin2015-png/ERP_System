@@ -7,6 +7,7 @@ class Inventario(tk.Frame):
     def __init__(self, padre,controller):
         super().__init__(padre)
         self.controller=controller
+        self.filtro_bajo_stock_activo = False
         self.widgets()
 
     def widgets(self):
@@ -38,20 +39,22 @@ class Inventario(tk.Frame):
         self.combobox_buscar.place(x=10,y=5,width=250,height=40 )
         self.combobox_buscar.bind("<KeyRelease>", self.buscar_articulo)
         self.cargar_articulos()
-
 #obsiones
         lblframe_botones=LabelFrame(self,text="OPCIONES",font="arial 14 bold",bg="#C6D9E3")
-        lblframe_botones.place(x=10,y=250,width=280,height=200)
+        lblframe_botones.place(x=10,y=250,width=280,height=260)
 
         bt1=tk.Button(lblframe_botones,text="AGREGAR",font="arial 12 bold",bg="#4CAF50",fg="white",command=self.agregar_articulo)
         bt1.place(x=10,y=10,width=250,height=40)
 
         bt2=tk.Button(lblframe_botones,text="EDITAR",font="arial 12 bold",bg="#2196F3",fg="white", command=self.editar_producto)
         bt2.place(x=10,y=60,width=250,height=40)
+        
+        self.bt3=tk.Button(lblframe_botones,text="INVENTARIO BAJO",font="arial 12 bold",bg="#F44336",fg="white",command=self.alternar_filtro_stock)
+        self.bt3.place(x=10,y=110,width=250,height=40)
 
-        bt3=tk.Button(lblframe_botones,text="ELIMINAR",font="arial 12 bold",bg="#F44336",fg="white",command=self.eliminar_producto)
-        bt3.place(x=10,y=110,width=250,height=40)
-    
+        bt4=tk.Button(lblframe_botones,text="ELIMINAR",font="arial 12 bold",bg="#BA48D6",fg="white",command=self.eliminar_producto)
+        bt4.place(x=10,y=160,width=250,height=40)
+
     def agregar_articulo(self):
         top=tk.Toplevel(self)
         top.title("Agregar Producto")
@@ -108,13 +111,36 @@ class Inventario(tk.Frame):
         tk.Button(top,text="Guardar",font="arial 12 bold",command=guardar).place(x=40, y=200,width=130,height=40)
         tk.Button(top,text="Cancelar",font="arial 12 bold",command=top.destroy).place(x=240, y=200,width=130,height=40)
 
-    def buscar_articulo(self,event=None):
-        nombre=self.combobox_buscar.get()
-        resultado=ctrl.buscar_articulo(nombre)
+    def alternar_filtro_stock(self):
+        if not self.filtro_bajo_stock_activo:
+            productos_bajos = ctrl.mostrar_inventario_baja_cantidad()
+            
+            if not productos_bajos:
+                messagebox.showinfo("Inventario Sano", "No hay productos con stock menor a 15 unidades.")
+                return
+                
+            self.cargar_articulos(productos_bajos)
+            
+            self.bt3.config(text="MOSTRAR TODO", bg="#9FB8C7")
+            
+            self.filtro_bajo_stock_activo = True
+            
+        else:
+            self.cargar_articulos()
+            self.bt3.config(text="VER BAJO STOCK", bg="#F44336")            
+            self.filtro_bajo_stock_activo = False
+
+
+    def buscar_articulo(self, event=None):
+        if self.filtro_bajo_stock_activo:
+            self.bt3.config(text="VER BAJO STOCK", bg="#FFC107")
+            self.filtro_bajo_stock_activo = False
+            
+        nombre = self.combobox_buscar.get()
+        resultado = ctrl.buscar_articulo(nombre)
         self.cargar_articulos(resultado)
 
     def cargar_articulos(self, datos=None):
-    # Limpiar todos los elementos visuales previos en el frame
         for widget in self.scrollbar_frame.winfo_children():
             widget.destroy()
             
@@ -159,7 +185,6 @@ class Inventario(tk.Frame):
         self.scrollbar_frame.grid_columnconfigure(4, weight=2)
     
     def editar_producto(self):
-        #Obtener lo que sea que esté escrito en el buscador
         texto_buscado = self.combobox_buscar.get().strip()
         
         if not texto_buscado:
@@ -222,7 +247,6 @@ class Inventario(tk.Frame):
             except ValueError:
                 messagebox.showerror("Error", "Costo, Precio o Stock inválidos. Ingresa números válidos.", parent=vent_editar)
 
-        # Botón para confirmar
         btn_guardar = tk.Button(
             vent_editar, 
             text="GUARDAR CAMBIOS", 
@@ -233,7 +257,6 @@ class Inventario(tk.Frame):
         btn_guardar.place(x=100, y=200, width=200, height=40)
     
     def eliminar_producto(self):
-        # 1. Obtener lo escrito en el buscador
         texto_buscado = self.combobox_buscar.get().strip()
 
         if not texto_buscado:
@@ -252,7 +275,6 @@ class Inventario(tk.Frame):
             )
             return
 
-        # Tomamos el primer registro de la lista 
         producto_exacto = productos_encontrados[0]
         id_prod, nom_prod,costo_prod, pre_prod, st_prod = producto_exacto
 

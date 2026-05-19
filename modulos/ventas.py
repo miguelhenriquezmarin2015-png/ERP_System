@@ -214,7 +214,6 @@ class Ventas(tk.Frame):
         label_producto=tk.Label(labelframe,text="Producto:",font="arial 14 bold",bg="#C6D9E3")
         label_producto.place(x=10,y=60)
         self.entry_producto=ttk.Combobox(labelframe,font="arial 14 bold")
-        # Busca la línea donde declaras tu Combobox de productos y añade esto abajo:
         self.entry_producto.bind("<<ComboboxSelected>>", self.actualizar_datos_producto)
         self.entry_producto.place(x=110,y=60,width=200,height=40)
         self.entry_producto['values'] = self.cargar_productos()
