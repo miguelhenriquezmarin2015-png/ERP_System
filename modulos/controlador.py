@@ -224,6 +224,15 @@ def cargar_productos():
     conn.close()
     return [producto[0] for producto in productos]
 
+def filtrar_nombre(texto_busqueda):
+    conn = sql.connect('negocio.db')
+    cursor = conn.cursor()
+    instruccion = "SELECT nombre FROM inventario WHERE nombre LIKE ? ORDER BY nombre ASC"
+    termino = f"%{texto_busqueda}%"
+    cursor.execute(instruccion, (termino,))
+    resultados = cursor.fetchall()
+    conn.close()    
+    return [producto[0] for producto in resultados]
 #clientes-----
 
 def createDB_Clientes():
@@ -254,6 +263,16 @@ def buscar_cliente(nombre):
     resultado = cursor.fetchall()
     conn.close()
     return resultado
+
+def filtrar_clientes_por_nombre(texto_busqueda):
+    conn = sql.connect('negocio.db')
+    cursor = conn.cursor()
+    instruccion = "SELECT nombre FROM clientes WHERE nombre LIKE ? ORDER BY nombre ASC"
+    termino = f"%{texto_busqueda}%"
+    cursor.execute(instruccion, (termino,))
+    resultados = cursor.fetchall()
+    conn.close()
+    return [cliente[0] for cliente in resultados]
 
 def obtener_nombres_clientes():
     conn = sql.connect('negocio.db')

@@ -17,9 +17,26 @@ class Ventas(tk.Frame):
 
     def obtener_num_factura(self):
         return ctrl.obtener_num_factura()
-    
-    def cargar_productos(self):
-        return ctrl.cargar_productos()
+
+    def inicializar_productos(self):
+        lista_completa = ctrl.cargar_productos() 
+        self.entry_producto['values'] = lista_completa
+
+    def cargar_productos(self, event=None):
+        texto_escrito = self.entry_producto.get()
+        
+        if texto_escrito == "":
+            self.inicializar_productos()
+            return
+            
+        lista_filtrada = ctrl.filtrar_nombre(texto_escrito)
+        self.entry_producto['values'] = lista_filtrada
+        
+        if lista_filtrada:
+            self.entry_producto.event_generate("<<ComboboxDropdown>>")
+            
+            
+            self.entry_producto.icursor(tk.END)
     
     def actualizar_datos_producto(self, event=None):
         producto_seleccionado = self.entry_producto.get()
@@ -49,6 +66,19 @@ class Ventas(tk.Frame):
         lista_nombres = ctrl.obtener_nombres_clientes()
         self.entry_cliente['values'] = lista_nombres
 
+    def filtrar_clientes(self, event=None):
+        texto_escrito = self.entry_cliente.get()
+        
+        if texto_escrito == "":
+            self.cargar_clientes()
+            return
+            
+        lista_filtrada = ctrl.filtrar_clientes_por_nombre(texto_escrito)
+        self.entry_cliente['values'] = lista_filtrada
+        
+        if lista_filtrada:
+            self.entry_cliente.event_generate("<<ComboboxDropdown>>")
+            self.entry_cliente.icursor(tk.END)
 
     def agregar_al_carrito(self):
         cliente = self.entry_cliente.get()
@@ -77,6 +107,7 @@ class Ventas(tk.Frame):
 
         self.tre.insert("", "end", values=(self.numero_factura, cliente, producto, f"{self.precio_actual:.2f}", cantidad, f"{subtotal_formateado}"))
         
+        self.entry_cliente.config(state="disabled")        
         ctrl.reducir_stock(producto, cantidad)
         self.stock_actual -= cantidad
         self.label_stock.config(text=f"stock: {self.stock_actual}")
@@ -114,7 +145,11 @@ class Ventas(tk.Frame):
                 self.label_stock.config(text=f"stock: {self.stock_actual}")
                 
             self.tre.delete(item)
-            
+        
+        if not self.tre.get_children():
+            self.entry_cliente.config(state="normal")
+            self.entry_cliente.set("")
+
         self.actualizar_total_carrito()
 
     def cancelar_toda_la_venta(self):
@@ -129,7 +164,8 @@ class Ventas(tk.Frame):
                     continue
             self.tre.delete(*self.tre.get_children())
             self.actualizar_total_carrito()
-
+            self.entry_cliente.config(state="normal")
+            self.entry_cliente.set("") 
 
     def realizar_pago(self):
         if self.total_venta_actual == 0.0:
@@ -194,6 +230,8 @@ class Ventas(tk.Frame):
             self.label_numero_factura.config(text=f"{self.numero_factura}")
             self.total_venta_actual = 0.0
             self.lable_precio_total.config(text="Precio Total: $0.00")
+            self.entry_cliente.config(state="normal")
+            self.entry_cliente.set("") 
             
             ventana_pago.destroy()
 
@@ -210,13 +248,15 @@ class Ventas(tk.Frame):
         self.entry_cliente.bind("<<ComboboxSelected>>", self.cargar_clientes)
         self.entry_cliente.place(x=110,y=10,width=200,height=40)
         self.cargar_clientes()
+        self.entry_cliente.bind("<KeyRelease>", self.filtrar_clientes)
 
         label_producto=tk.Label(labelframe,text="Producto:",font="arial 14 bold",bg="#C6D9E3")
         label_producto.place(x=10,y=60)
         self.entry_producto=ttk.Combobox(labelframe,font="arial 14 bold")
         self.entry_producto.bind("<<ComboboxSelected>>", self.actualizar_datos_producto)
-        self.entry_producto.place(x=110,y=60,width=200,height=40)
-        self.entry_producto['values'] = self.cargar_productos()
+        self.entry_producto.place(x=110,y=60,width=200,height=40)        
+        self.inicializar_productos()
+        self.entry_producto.bind("<KeyRelease>", self.cargar_productos)
 
         label_cantidad = tk.Label(labelframe, text="Cantidad:", font="arial 14 bold", bg="#C6D9E3")
         label_cantidad.place(x=400, y=10)
