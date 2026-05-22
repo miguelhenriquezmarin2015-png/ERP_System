@@ -102,8 +102,19 @@ def restaurar_stock(nombre, cantidad):
         print(f"Error al restaurar stock: {e}")
     finally:
         conn.close()
-
+   
+def obtener_stock_actual(nombre_producto):
+    conexion = sql.connect('negocio.db')
+    cursor = conexion.cursor()
     
+    query = "SELECT stock FROM inventario WHERE nombre = ?"
+    cursor.execute(query, (nombre_producto,))
+    resultado = cursor.fetchone()
+    
+    conexion.close()
+    
+    return resultado[0] if resultado else 0
+
 def eliminar_articulo(id):
     conn = sql.connect('negocio.db')
     cursor = conn.cursor()
@@ -202,7 +213,6 @@ def guardar_venta_completa(numero_factura, cliente, lista_productos, total):
     finally:
         conn.close()
 
-
 def obtener_num_factura():
     conn = sql.connect('negocio.db')
     cursor = conn.cursor()
@@ -246,13 +256,34 @@ def createDB_Clientes():
     conn.commit()
     conn.close()
 
-def guardar_cliente(nombre, telefono, cedula):
+def guardar_cliente(nombre, telefono, cedula, tipo):
     conn = sql.connect('negocio.db')
     cursor = conn.cursor()
-    instruccion="INSERT INTO clientes (nombre, telefono, cedula) VALUES (?,?,?)"
-    cursor.execute(instruccion, (nombre, telefono, cedula))
+    instruccion="INSERT INTO clientes (nombre, telefono, cedula, tipo) VALUES (?,?,?,?)"
+    cursor.execute(instruccion, (nombre, telefono, cedula, tipo))
     conn.commit()
     conn.close()
+
+def obtener_clientes():
+    conexion = sql.connect("negocio.db")
+    cursor = conexion.cursor()
+    query = "SELECT id, nombre, cedula, telefono, tipo FROM clientes"
+    cursor.execute(query)
+    resultados = cursor.fetchall()
+    conexion.close()
+    return resultados
+
+def modificar_cliente(id_cliente, nombre, telefono, cedula, tipo):
+    conexion = sql.connect("negocio.db")
+    cursor = conexion.cursor()    
+    query = """
+        UPDATE clientes 
+        SET nombre = ?, telefono = ?, cedula = ?, tipo = ? 
+        WHERE id = ?
+    """
+    cursor.execute(query, (nombre, telefono, cedula, tipo, id_cliente))
+    conexion.commit()
+    conexion.close()
 
 def buscar_cliente(nombre):
     conn = sql.connect('negocio.db')
@@ -275,6 +306,7 @@ def filtrar_clientes_por_nombre(texto_busqueda):
     return [cliente[0] for cliente in resultados]
 
 def obtener_nombres_clientes():
+
     conn = sql.connect('negocio.db')
     cursor = conn.cursor()
     cursor.execute("SELECT nombre FROM clientes ORDER BY nombre ASC")
@@ -283,3 +315,15 @@ def obtener_nombres_clientes():
     
     lista_clientes = [cliente[0] for cliente in resultados]
     return lista_clientes
+
+def tipo_cliente(nombre_cliente):
+    conexion = sql.connect('negocio.db') 
+    cursor = conexion.cursor()
+    
+    query = "SELECT tipo FROM clientes WHERE nombre = ?"
+    cursor.execute(query, (nombre_cliente,))
+    resultado = cursor.fetchone()
+    
+    conexion.close()
+    
+    return resultado[0] if resultado else 'Natural'

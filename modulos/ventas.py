@@ -2,6 +2,7 @@ from tkinter import *
 from tkinter import ttk,messagebox,simpledialog
 import tkinter as tk
 import modulos.controlador as ctrl
+import threading
 
 
 class Ventas(tk.Frame):
@@ -28,14 +29,21 @@ class Ventas(tk.Frame):
         if texto_escrito == "":
             self.inicializar_productos()
             return
+
+        def buscar_en_segundo_plano():
+            lista_filtrada = ctrl.filtrar_nombre(texto_escrito)
             
-        lista_filtrada = ctrl.filtrar_nombre(texto_escrito)
+            self.after(0, lambda: self.actualizar_interfaz_combo(lista_filtrada))
+
+        hilo = threading.Thread(target=buscar_en_segundo_plano)
+        hilo.daemon = True
+        hilo.start()
+
+    def actualizar_interfaz_combo(self, lista_filtrada):
         self.entry_producto['values'] = lista_filtrada
         
         if lista_filtrada:
             self.entry_producto.event_generate("<<ComboboxDropdown>>")
-            
-            
             self.entry_producto.icursor(tk.END)
     
     def actualizar_datos_producto(self, event=None):
@@ -59,7 +67,7 @@ class Ventas(tk.Frame):
         producto_seleccionado=self.entry_producto.get()
         datos = ctrl.mostrar_vender(producto_seleccionado)
         if datos:
-            self.stock_actual = datos[2]   # stock
+            self.stock_actual = datos[2]   
             self.label_stock.config(text=f"stock: {self.stock_actual}")
 
     def cargar_clientes(self, event=None):
@@ -72,8 +80,17 @@ class Ventas(tk.Frame):
         if texto_escrito == "":
             self.cargar_clientes()
             return
+
+        def buscar_clientes_segundo_plano():
+            lista_filtrada = ctrl.filtrar_clientes_por_nombre(texto_escrito)
             
-        lista_filtrada = ctrl.filtrar_clientes_por_nombre(texto_escrito)
+            self.after(0, lambda: self.actualizar_interfaz_clientes(lista_filtrada))
+
+        hilo = threading.Thread(target=buscar_clientes_segundo_plano)
+        hilo.daemon = True
+        hilo.start()
+
+    def actualizar_interfaz_clientes(self, lista_filtrada):
         self.entry_cliente['values'] = lista_filtrada
         
         if lista_filtrada:
@@ -89,7 +106,7 @@ class Ventas(tk.Frame):
         except ValueError:
             messagebox.showerror("Error", "Por favor, ingrese una cantidad válida.")
             return
-
+            
         if not cliente:
             messagebox.showerror("Error", "Por favor, seleccione un cliente.")
             return
@@ -97,60 +114,180 @@ class Ventas(tk.Frame):
         if not producto:
             messagebox.showerror("Error", "Por favor, seleccione un producto.")
             return
+            
+        if cantidad <= 0:
+            messagebox.showerror("Error", "La cantidad debe ser mayor a cero.")
+            return
 
         if cantidad > self.stock_actual:
             messagebox.showerror("Error", f"Cantidad excede el stock disponible ({self.stock_actual}).")
             return
 
-        subtotal = self.precio_actual * cantidad
-        subtotal_formateado = "{:,.1f}".format(subtotal)
-
-        self.tre.insert("", "end", values=(self.numero_factura, cliente, producto, f"{self.precio_actual:.2f}", cantidad, f"{subtotal_formateado}"))
+        producto_ya_existe = False
         
-        self.entry_cliente.config(state="disabled")        
+        for item in self.tre.get_children():
+            valores_fila = self.tre.item(item, 'values')
+            
+            if valores_fila[2] == producto:
+                producto_ya_existe = True
+                cantidad_anterior = int(valores_fila[4]) 
+                nueva_cantidad_total = cantidad_anterior + cantidad
+                
+                nuevo_subtotal = self.precio_actual * nueva_cantidad_total
+                subtotal_formateado = "{:.1f}".format(nuevo_subtotal)
+                
+                self.tre.item(item, values=(
+                    valores_fila[0],      
+                    valores_fila[1],    
+                    producto,     
+                    valores_fila[3],      
+                    nueva_cantidad_total, 
+                    subtotal_formateado   
+                ))
+                break
+
+        if not producto_ya_existe:
+            subtotal = self.precio_actual * cantidad
+            subtotal_formateado = "{:.1f}".format(subtotal)
+            self.tre.insert("", "end", values=(
+                self.numero_factura, 
+                cliente, 
+                producto, 
+                f"{self.precio_actual:.2f}", 
+                cantidad, 
+                subtotal_formateado
+            ))
+
+        self.entry_cliente.config(state="disabled")
         ctrl.reducir_stock(producto, cantidad)
         self.stock_actual -= cantidad
         self.label_stock.config(text=f"stock: {self.stock_actual}")
-        
         self.actualizar_total_carrito()
 
     def actualizar_total_carrito(self):
         total_acumulado = 0.0
-        
+
         for item in self.tre.get_children():
             valores = self.tre.item(item, 'values')
             try:
-                subtotal_fila = float(valores[5]) 
+                subtotal_fila = float(valores[5])
                 total_acumulado += subtotal_fila
             except (IndexError, ValueError):
-                continue 
-                
-        self.total_venta_actual = total_acumulado
-        self.lable_precio_total.config(text=f"Precio Total: ${total_acumulado:.2f}")
+                continue
+
+        cliente_seleccionado = self.entry_cliente.get()
+        
+        porcentaje_iva = 0.16 
+        
+        if cliente_seleccionado:
+            tipo_cliente = ctrl.tipo_cliente(cliente_seleccionado) 
+            if tipo_cliente == "Jurídica":
+                porcentaje_iva = 0.16  
+            elif tipo_cliente == "Natural":
+                porcentaje_iva = 0.16 
+
+        monto_iva = total_acumulado * porcentaje_iva
+        total_con_iva = total_acumulado + monto_iva
+
+        self.total_venta_actual = total_con_iva
+
+        self.lable_precio_total.config(text=f"Precio Total: ${total_con_iva:.2f}")
 
     def eliminar_articulo_carrito(self):
         seleccionado = self.tre.selection()
         if not seleccionado:
+            messagebox.showwarning("Advertencia", "Por favor, seleccione un artículo para eliminar.")
             return
-            
+
+        if not messagebox.askyesno("Confirmar", "¿Desea eliminar este artículo del carrito?"):
+            return
+
         for item in seleccionado:
             valores = self.tre.item(item, 'values')
-            producto = valores[2] 
+            if not valores:
+                continue
+                
+            producto = str(valores[2]).strip()
             cantidad = int(valores[4])
-            
+
             ctrl.restaurar_stock(producto, cantidad)
-            
+
             if self.entry_producto.get() == producto:
                 self.stock_actual += cantidad
                 self.label_stock.config(text=f"stock: {self.stock_actual}")
-                
+
             self.tre.delete(item)
-        
+
         if not self.tre.get_children():
             self.entry_cliente.config(state="normal")
             self.entry_cliente.set("")
 
         self.actualizar_total_carrito()
+        messagebox.showinfo("Éxito", "Artículo removido correctamente.")
+
+    def editar_carrito(self):
+        selected_item = self.tre.selection()
+        if not selected_item:
+            messagebox.showerror("Error", "Por favor, seleccione un artículo para editar.")
+            return
+            
+        item_values = self.tre.item(selected_item[0], 'values')
+        if not item_values:
+            messagebox.showerror("Error", "Artículo seleccionado no válido.")
+            return
+            
+        current_producto = item_values[2]
+        current_cantidad = item_values[4]
+        
+        new_cantidad = simpledialog.askinteger(
+            "Editar Cantidad", 
+            f"Ingrese la nueva cantidad para {current_producto}: ", 
+            initialvalue=int(current_cantidad)
+        )
+        if new_cantidad is None:
+            return
+            
+        try:
+            if new_cantidad <= 0:
+                messagebox.showerror("Error", "La cantidad debe ser mayor a cero.")
+                return
+                
+            diferencia = new_cantidad - int(current_cantidad)
+            if diferencia == 0:
+                return 
+                
+            if diferencia > 0:
+                limite_maximo = self.stock_actual + int(current_cantidad)
+                if new_cantidad > limite_maximo:
+                    messagebox.showerror("Error", f"No hay suficiente stock. Máximo disponible: {limite_maximo}")
+                    return
+                    
+            ctrl.reducir_stock(current_producto, diferencia)
+            
+            precio_unitario = float(item_values[3])
+            nuevo_subtotal = precio_unitario * new_cantidad
+            subtotal_formateado = "{:.1f}".format(nuevo_subtotal)
+            
+            self.tre.item(selected_item[0], values=(
+                item_values[0],
+                item_values[1],   
+                current_producto,   
+                item_values[3],      
+                new_cantidad,      
+                subtotal_formateado 
+            ))
+            
+            if self.entry_producto.get() == current_producto:
+                self.stock_actual -= diferencia
+                self.label_stock.config(text=f"stock: {self.stock_actual}")
+                
+            self.actualizar_total_carrito()
+            messagebox.showinfo("Éxito", "Cantidad actualizada correctamente.")
+            
+        except ValueError:
+            messagebox.showerror("Error", "Error al procesar los datos numéricos de la fila.")
+        except Exception as e:
+            messagebox.showerror("Error", f"Ocurrió un fallo inesperado: {e}")
 
     def cancelar_toda_la_venta(self):
         if hasattr(self, 'tre'):
@@ -158,14 +295,21 @@ class Ventas(tk.Frame):
                 valores = self.tre.item(item, 'values')
                 try:
                     producto = valores[2]
-                    cantidad = int(valores[4]) 
+                    cantidad = int(valores[4])
                     ctrl.restaurar_stock(producto, cantidad)
                 except IndexError:
                     continue
+
             self.tre.delete(*self.tre.get_children())
+            
+            producto_pantalla = self.entry_producto.get()
+            if producto_pantalla:
+                self.stock_actual = ctrl.obtener_stock_actual(producto_pantalla)
+                self.label_stock.config(text=f"stock: {self.stock_actual}")
+
             self.actualizar_total_carrito()
             self.entry_cliente.config(state="normal")
-            self.entry_cliente.set("") 
+            self.entry_cliente.set("")
 
     def realizar_pago(self):
         if self.total_venta_actual == 0.0:
@@ -283,7 +427,7 @@ class Ventas(tk.Frame):
         boton_agregar=tk.Button(labelframe,text="Agregar al Carrito",font="arial 14 bold",bg="#4CAF50",fg="white",command=self.agregar_al_carrito)
         boton_agregar.place(x=100,y=135,width=200,height=40)
 
-        boton_editar=tk.Button(labelframe,text="Editar",font="arial 14 bold",bg="#2196F3",fg="white")
+        boton_editar=tk.Button(labelframe,text="Editar",font="arial 14 bold",bg="#2196F3",fg="white",command=self.editar_carrito)
         boton_editar.place(x=350,y=135,width=200,height=40)
 
         boton_eliminar=tk.Button(labelframe,text="Eliminar del Carrito",font="arial 14 bold",bg="#F44336",fg="white",command=self.eliminar_articulo_carrito)
