@@ -140,7 +140,7 @@ class Clientes(tk.Frame):
         lblframa_botones=LabelFrame(self,text="Opciones",font="arial 12 bold",bg="#C6D9E3")
         lblframa_botones.place(x=20,y=500,width=250,height=140)
 
-        bt1=tk.Button(lblframa_botones,text="Agregar",font="arial 12 bold",bg="#4CAF50",fg="white",command=self.nuevo_cliente)
+        bt1=tk.Button(lblframa_botones,text="Filtro",font="arial 12 bold",bg="#4CAF50",fg="white",command=self.nuevo_cliente)
         bt1.place(x=10,y=10,width=220,height=40)
 
         bt2=tk.Button(lblframa_botones,text="Modificar",font="arial 12 bold",bg="#2196F3",fg="white",command=self.actualizar_cliente)

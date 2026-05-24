@@ -193,7 +193,7 @@ class Ventas(tk.Frame):
 
         self.lable_precio_total.config(text=f"Precio Total: ${total_con_iva:.2f}")
 
-    def eliminar_articulo_carrito(self):
+    def eliminar_articulo(self):
         seleccionado = self.tre.selection()
         if not seleccionado:
             messagebox.showwarning("Advertencia", "Por favor, seleccione un artículo para eliminar.")
@@ -430,7 +430,7 @@ class Ventas(tk.Frame):
         boton_editar=tk.Button(labelframe,text="Editar",font="arial 14 bold",bg="#2196F3",fg="white",command=self.editar_carrito)
         boton_editar.place(x=350,y=135,width=200,height=40)
 
-        boton_eliminar=tk.Button(labelframe,text="Eliminar del Carrito",font="arial 14 bold",bg="#F44336",fg="white",command=self.eliminar_articulo_carrito)
+        boton_eliminar=tk.Button(labelframe,text="Eliminar del Carrito",font="arial 14 bold",bg="#F44336",fg="white",command=self.eliminar_articulo)
         boton_eliminar.place(x=600,y=135,width=200,height=40)
 
         boton_limpiar=tk.Button(labelframe,text="Limpiar",font="arial 14 bold",bg="#BA48D6",fg="white",command=self.cancelar_toda_la_venta)
@@ -461,10 +461,10 @@ class Ventas(tk.Frame):
         self.tre.column("Total",width=100,anchor=CENTER)
 
         self.lable_precio_total = tk.Label(self, text="Precio Total: $0.00", font="arial 14 bold", bg="#C6D9E3")
-        self.lable_precio_total.place(x=600, y=575)
+        self.lable_precio_total.place(x=900, y=575)
     
         boton_pagar=tk.Button(self,text="Pagar",font="arial 14 bold",bg="#4CAF50",fg="white",command=self.realizar_pago)
         boton_pagar.place(x=70,y=575,width=220,height=40)
 
-        boton_ver_ventas=tk.Button(self,text="Ver Ventas Realizadas",font="arial 14 bold",bg="#2196F3",fg="white")
-        boton_ver_ventas.place(x=350,y=575,width=220,height=40)
+        """ boton_ver_ventas=tk.Button(self,text="Ver Ventas Realizadas",font="arial 14 bold",bg="#2196F3",fg="white")
+        boton_ver_ventas.place(x=350,y=575,width=220,height=40)"""

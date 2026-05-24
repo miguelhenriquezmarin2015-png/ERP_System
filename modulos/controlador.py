@@ -1,17 +1,102 @@
 import sqlite3 as sql
 from datetime import datetime
-#inventario -------
-def createDB_Inventario():
+from reportlab.lib.pagesizes import letter
+from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle
+from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+from reportlab.lib import colors
+import os
+
+#iniciar----
+
+def create_all_tables():
     conn = sql.connect('negocio.db')
     cursor = conn.cursor()
-    cursor.execute("""CREATE TABLE IF NOT EXISTS inventario
-                 (id INTEGER PRIMARY KEY AUTOINCREMENT,
-                  nombre TEXT NOT NULL,
-                  costo REAL NOT NULL,
-                  precio REAL NOT NULL,
-                  stock INTEGER NOT NULL)""")
+
+    cursor.execute("""
+    CREATE TABLE IF NOT EXISTS "empresa" (
+        "id"          INTEGER NOT NULL,
+        "nombre"      TEXT NOT NULL,
+        "direccion"   TEXT,
+        "telefono"    TEXT,
+        "email"       TEXT,
+        "descripcion" TEXT,
+        PRIMARY KEY("id" AUTOINCREMENT)
+    );
+    """)
+
+    cursor.execute("""
+    CREATE TABLE IF NOT EXISTS "clientes" (
+        "id"       INTEGER NOT NULL,
+        "nombre"   TEXT NOT NULL,
+        "cedula"   TEXT NOT NULL,
+        "telefono" TEXT NOT NULL,
+        "tipo"     TEXT NOT NULL DEFAULT 'Natural',
+        PRIMARY KEY("id" AUTOINCREMENT)
+    );
+    """)
+
+    cursor.execute("""
+    CREATE TABLE IF NOT EXISTS "usuarios" (
+        "id"              INTEGER NOT NULL,
+        "username"        TEXT NOT NULL UNIQUE,
+        "password"        TEXT NOT NULL,
+        "nombre"          TEXT,
+        "cedula"          TEXT,
+        "telefono"        TEXT,
+        "correo"          TEXT,
+        "rol"             TEXT NOT NULL DEFAULT 'Vendedor',
+        PRIMARY KEY("id" AUTOINCREMENT)
+    );
+    """)
+
+    cursor.execute("""
+    CREATE TABLE IF NOT EXISTS "ventas" (
+        "id"             INTEGER NOT NULL,
+        "numero_factura" TEXT NOT NULL UNIQUE,
+        "cliente"        TEXT NOT NULL,
+        "fecha"          NUMERIC NOT NULL,
+        "total"          REAL NOT NULL,
+        PRIMARY KEY("id" AUTOINCREMENT)
+    );
+    """)
+
+    cursor.execute("""
+    CREATE TABLE IF NOT EXISTS "detalles_ventas" (
+        "id"              INTEGER NOT NULL,
+        "venta_id"        INTEGER NOT NULL,
+        "producto"        TEXT NOT NULL,
+        "precio_unitario" REAL NOT NULL,
+        "cantidad"        INTEGER NOT NULL,
+        "subtotal"        INTEGER NOT NULL,
+        PRIMARY KEY("id" AUTOINCREMENT),
+        CONSTRAINT "ventas" FOREIGN KEY("venta_id") REFERENCES "ventas"("id")
+    );
+    """)
+
+    cursor.execute("""
+    CREATE TABLE IF NOT EXISTS "inventario" (
+        "id"     INTEGER NOT NULL,
+        "nombre" TEXT NOT NULL,
+        "costo"  REAL NOT NULL,
+        "precio" REAL NOT NULL,
+        "stock"  INTEGER NOT NULL,
+        PRIMARY KEY("id" AUTOINCREMENT)
+    );
+    """)
+
+    cursor.execute("SELECT COUNT(*) FROM usuarios")
+    if cursor.fetchone()[0] == 0:
+        cursor.execute("""
+        INSERT INTO usuarios (id, username, password, rol) 
+        VALUES (1, 'admin', 'admin', 'Administrador')
+        """)
+
     conn.commit()
     conn.close()
+
+create_all_tables()
+
+#inventario -------
 
 def guardar_articulo(nombre,costo,precio,stock):
     conn = sql.connect('negocio.db')
@@ -125,16 +210,6 @@ def eliminar_articulo(id):
 
 #usuario-----
 
-def createDB_Usuario():
-    conn = sql.connect('negocio.db')
-    cursor = conn.cursor()
-    cursor.execute("""CREATE TABLE IF NOT EXISTS usuarios
-                 (id INTEGER PRIMARY KEY AUTOINCREMENT,
-                  username TEXT NOT NULL,
-                  password TEXT NOT NULL)""")
-    conn.commit()
-    conn.close()
-
 def validacion(user,pas):
     conn = sql.connect('negocio.db')
     cursor = conn.cursor()
@@ -147,38 +222,128 @@ def validacion(user,pas):
 def buscar_usuario(username):
     conn = sql.connect('negocio.db')
     cursor = conn.cursor()
-    instruccion="SELECT * FROM usuarios where username=?"
+    instruccion="SELECT * FROM usuarios where username LIKE ?"
     termino_busqueda = f"%{username}%"
     cursor.execute(instruccion, (termino_busqueda,))
     resultado = cursor.fetchone()
     conn.close()
     return resultado
 
-#ventas-----
-def createDB_Ventas():
+
+#empresa-----
+
+def guardar_empresa(nombre, direccion, telefono, email, descripcion):
     conn = sql.connect('negocio.db')
     cursor = conn.cursor()
-    cursor.execute("""CREATE TABLE IF NOT EXISTS ventas
-                 (id INTEGER PRIMARY KEY AUTOINCREMENT,
-                  numero_factura TEXT NOT NULL,
-                  cliente TEXT NOT NULL,
-                  fecha NUMERIC NOT NULL,
-                  total REAL NOT NULL)""")
+    instruccion = """INSERT OR REPLACE INTO empresa (id, nombre, direccion, telefono, email, descripcion)
+                     VALUES (1, ?, ?, ?, ?, ?)"""
+    cursor.execute(instruccion, (nombre, direccion, telefono, email, descripcion))
     conn.commit()
     conn.close()
 
-def createDB_Detalles_Ventas():
+def obtener_empresa():
     conn = sql.connect('negocio.db')
     cursor = conn.cursor()
-    cursor.execute("""CREATE TABLE IF NOT EXISTS detalles_ventas
-                 (id INTEGER PRIMARY KEY AUTOINCREMENT,
-                  numero_factura TEXT NOT NULL,
-                  producto TEXT NOT NULL,
-                  precio_unitario REAL NOT NULL,
-                  cantidad INTEGER NOT NULL,
-                  subtotal REAL NOT NULL)""")
+    instruccion = "SELECT nombre, direccion, telefono, email, descripcion FROM empresa WHERE id = 1"
+    cursor.execute(instruccion)
+    resultado = cursor.fetchone()
+    conn.close()
+    return resultado
+
+def obtener_perfil_admin():
+    """Recupera los datos completos del usuario principal (ID = 1)."""
+    conn = sql.connect('negocio.db')
+    cursor = conn.cursor()
+    cursor.execute("SELECT username, password, nombre, cedula, telefono, correo FROM usuarios WHERE id = 1")
+    resultado = cursor.fetchone()
+    conn.close()
+    return resultado
+
+def actualizar_perfil_admin(usuario, contrasena, nombre, cedula, telefono, correo):
+    conn = sql.connect('negocio.db')
+    cursor = conn.cursor()
+    instruccion = """UPDATE usuarios 
+                     SET username=?, password=?, nombre=?, cedula=?, telefono=?, correo=? 
+                     WHERE id = 1"""
+    cursor.execute(instruccion, (usuario, contrasena, nombre, cedula, telefono, correo))
     conn.commit()
     conn.close()
+
+#ventas-----
+def exportar_ventas_pdf(modo):
+    conexion = sql.connect("negocio.db")
+    cursor = conexion.cursor()
+    query = "SELECT id, numero_factura, cliente, fecha, total FROM ventas"
+    condicion = ""
+
+    if modo == "Diario":
+        condicion = " WHERE fecha >= date('now', '-1 day')"
+    elif modo == "Semanal":
+        condicion = " WHERE fecha >= date('now', '-7 days')"
+    elif modo == "Quincenal":
+        condicion = " WHERE fecha >= date('now', '-15 days')"
+    elif modo == "Mensual":
+        condicion = " WHERE fecha >= date('now', '-30 days')"
+    else:
+        condicion = "" 
+        
+    cursor.execute(query + condicion + " ORDER BY id DESC")
+    datos_ventas = cursor.fetchall()
+    conexion.close()
+
+    carpeta_descargas = os.path.join(os.path.expanduser("~"), "Downloads")
+    nombre_archivo = f"Reporte_{modo}.pdf"
+    ruta_destino_completa = os.path.join(carpeta_descargas, nombre_archivo)
+
+    doc = SimpleDocTemplate(ruta_destino_completa, pagesize=letter)
+    elementos = []
+    
+    # Definición de los estilos de fuentes y espaciados
+    estilos = getSampleStyleSheet()
+    estilo_titulo = ParagraphStyle('Titulo', parent=estilos['Heading1'], fontSize=24, leading=28, textColor=colors.HexColor("#2196F3"), spaceAfter=12)
+    estilo_sub = ParagraphStyle('Sub', parent=estilos['Normal'], fontSize=12, leading=16, spaceAfter=20)
+
+    # Estructura del encabezado del documento
+    elementos.append(Paragraph("REPORTE DE VENTAS", estilo_titulo))
+    elementos.append(Paragraph(f"Filtro aplicado: {modo} | Historial generado automáticamente en Descargas.", estilo_sub))
+    elementos.append(Spacer(1, 10))
+
+    tabla_datos = [["ID", "N° Factura", "Cliente", "Fecha", "Total"]]
+    total_acumulado = 0.0
+
+    for v in datos_ventas:
+        total_acumulado += float(v[4])
+        fila_formateada = [str(v[0]), str(v[1]), str(v[2]), str(v[3]), f"${v[4]:,.2f}"]
+        tabla_datos.append(fila_formateada)
+
+    tabla_datos.append(["", "", "", "TOTAL:", f"${total_acumulado:,.2f}"])
+
+    tabla_pdf = Table(tabla_datos, colWidths=[40, 80, 200, 100, 100])
+    
+    estilo_tabla = TableStyle([
+        ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor("#9FB8C7")),
+        ('TEXTCOLOR', (0, 0), (-1, 0), colors.black),
+        ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+        ('FONTSIZE', (0, 0), (-1, 0), 12),
+        ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
+        ('ALIGN', (0, 0), (0, -1), 'CENTER'),  
+        ('ALIGN', (1, 0), (1, -1), 'CENTER'),  
+        ('ALIGN', (4, 0), (4, -1), 'RIGHT'),  
+        ('FONTNAME', (-2, -1), (-1, -1), 'Helvetica-Bold'),
+        ('BOTTOMPADDING', (0, 0), (-1, 0), 8),
+        ('GRID', (0, 0), (-1, -2), 0.5, colors.grey),
+    ])
+
+    for i in range(1, len(tabla_datos) - 1):
+        bg_color = colors.HexColor("#E1EBF0") if i % 2 == 0 else colors.HexColor("#F4F8FA")
+        estilo_tabla.add('BACKGROUND', (0, i), (-1, i), bg_color)
+
+    tabla_pdf.setStyle(estilo_tabla)
+    elementos.append(tabla_pdf)
+
+    doc.build(elementos)
+    
+    return ruta_destino_completa
 
 def guardar_venta_completa(numero_factura, cliente, lista_productos, total):
     """
@@ -243,18 +408,39 @@ def filtrar_nombre(texto_busqueda):
     resultados = cursor.fetchall()
     conn.close()    
     return [producto[0] for producto in resultados]
-#clientes-----
 
-def createDB_Clientes():
-    conn = sql.connect('negocio.db')
-    cursor = conn.cursor()
-    cursor.execute("""CREATE TABLE IF NOT EXISTS clientes
-                 (id INTEGER PRIMARY KEY AUTOINCREMENT,
-                  nombre TEXT NOT NULL,
-                  telefono TEXT NOT NULL,
-                  cedula TEXT NOT NULL)""")
-    conn.commit()
-    conn.close()
+def obtener_ventas():
+    conexion = sql.connect("negocio.db")
+    cursor = conexion.cursor()    
+    query = "SELECT id, numero_factura, cliente, fecha, total FROM ventas ORDER BY id DESC"
+    cursor.execute(query)
+    resultados = cursor.fetchall()
+    conexion.close()
+    return resultados
+
+def obtener_ventas_filtradas(modo):
+    conexion = sql.connect("negocio.db")
+    cursor = conexion.cursor()
+
+    query = "SELECT id, numero_factura, cliente, fecha, total FROM ventas"
+    condicion = ""
+
+    if modo == "Diario":
+        condicion = " WHERE fecha >= date('now', '-1 day')"
+    elif modo == "Semanal":
+        condicion = " WHERE fecha >= date('now', '-7 days')"
+    elif modo == "Quincenal":
+        condicion = " WHERE fecha >= date('now', '-15 days')"
+    elif modo == "Mensual":
+        condicion = " WHERE fecha >= date('now', '-30 days')"
+
+    query_final = query + condicion + " ORDER BY id DESC"
+    cursor.execute(query_final)
+    resultados = cursor.fetchall()
+    conexion.close()
+    return resultados
+
+#clientes-----
 
 def guardar_cliente(nombre, telefono, cedula, tipo):
     conn = sql.connect('negocio.db')
@@ -306,13 +492,12 @@ def filtrar_clientes_por_nombre(texto_busqueda):
     return [cliente[0] for cliente in resultados]
 
 def obtener_nombres_clientes():
-
     conn = sql.connect('negocio.db')
     cursor = conn.cursor()
     cursor.execute("SELECT nombre FROM clientes ORDER BY nombre ASC")
     resultados = cursor.fetchall()
     conn.close()
-    
+
     lista_clientes = [cliente[0] for cliente in resultados]
     return lista_clientes
 
