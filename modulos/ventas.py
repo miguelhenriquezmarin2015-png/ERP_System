@@ -381,6 +381,117 @@ class Ventas(tk.Frame):
 
         boton_confirmar = tk.Button(ventana_pago, text="Confirmar Pago", font="arial 14 bold", bg="#4CAF50", fg="white", command=confirmar_transaccion)
         boton_confirmar.place(x=100, y=280, width=200, height=40)
+    
+    def ver_ventas(self):
+        self.modos_filtro = ["Mostrar Todo", "Diario", "Semanal", "Quincenal", "Mensual"]
+        self.indice_filtro = 0
+
+        toplabel = tk.Toplevel(self)
+        toplabel.title("Ventas Realizadas")
+        toplabel.geometry("950x600+450+80")
+        toplabel.config(bg="#C6D9E3")
+        toplabel.resizable(False, False)
+        toplabel.transient(self.master)
+        toplabel.grab_set()
+
+        canvas_finanzas = tk.Frame(toplabel, bg="#C6D9E3")
+        canvas_finanzas.place(x=20, y=80, width=910, height=500)
+
+        self.bt1 = tk.Button(toplabel, text="Mostrar Todo", font="arial 12 bold", bg="#4CAF50", fg="white", command=self.rotar_y_filtrar)
+        self.bt1.place(x=20, y=20, width=220, height=40)
+
+        self.bt2 = tk.Button(toplabel, text="Descargar", font="arial 12 bold", bg="#2196F3", fg="white", command=self.descargar_pdf)
+        self.bt2.place(x=260, y=20, width=220, height=40)
+
+        self.canvas = tk.Canvas(canvas_finanzas, bg="#C6D9E3", highlightthickness=0)
+        self.scrollbar = tk.Scrollbar(canvas_finanzas, orient="vertical", command=self.canvas.yview)
+        self.scrollbar_frame = tk.Frame(self.canvas, bg="#C6D9E3")
+
+        self.scrollbar_frame.bind(
+            "<Configure>",
+            lambda e: self.canvas.configure(scrollregion=self.canvas.bbox("all"))
+        )
+        self.canvas.bind(
+            "<Configure>",
+            lambda e: self.canvas.itemconfigure(self.canvas.find_withtag("all")[0], width=e.width)
+        )
+
+        self.canvas.create_window((0, 0), window=self.scrollbar_frame, anchor="nw")
+        self.canvas.configure(yscrollcommand=self.scrollbar.set)
+
+        self.canvas.pack(side="left", fill="both", expand=True)
+        self.scrollbar.pack(side="right", fill="y")
+
+        self.cargar_ventas()
+
+    def cargar_ventas(self, datos=None):
+        if not hasattr(self, 'scrollbar_frame') or not self.scrollbar_frame.winfo_exists():
+            return
+
+        for widget in self.scrollbar_frame.winfo_children():
+            widget.destroy()
+
+        headers = ["ID", "N° Factura", "Cliente", "Fecha", "Total General"]
+        for col_idx, text in enumerate(headers):
+            lbl_header = tk.Label(
+                self.scrollbar_frame,
+                text=text,
+                font=("arial", 16, "bold"),
+                bg="#9FB8C7",
+                fg="black",
+                relief="groove",
+                padx=10,
+                pady=5
+            )
+            lbl_header.grid(row=0, column=col_idx, sticky="nsew")
+
+        if datos is not None:
+            historial_ventas = datos
+        else:
+            historial_ventas = ctrl.obtener_ventas()
+
+        for row_idx, venta in enumerate(historial_ventas, start=1):
+            color_fila = "#E1EBF0" if row_idx % 2 == 0 else "#F4F8FA"
+
+            for col_idx, valor in enumerate(venta):
+                texto_celda = f"${valor:,.2f}" if col_idx == 4 else valor
+                
+                lbl_dato = tk.Label(
+                    self.scrollbar_frame,
+                    text=texto_celda,
+                    font=("arial", 16),
+                    bg=color_fila,
+                    anchor="center" if col_idx in [0, 1, 3] else ("w" if col_idx == 2 else "e"),
+                    padx=10,
+                    pady=5
+                )
+                lbl_dato.grid(row=row_idx, column=col_idx, sticky="nsew")
+
+        self.scrollbar_frame.grid_columnconfigure(0, weight=1)
+        self.scrollbar_frame.grid_columnconfigure(1, weight=2)
+        self.scrollbar_frame.grid_columnconfigure(2, weight=4)
+        self.scrollbar_frame.grid_columnconfigure(3, weight=2)
+        self.scrollbar_frame.grid_columnconfigure(4, weight=2)
+
+    def rotar_y_filtrar(self):
+        self.indice_filtro = (self.indice_filtro + 1) % len(self.modos_filtro)
+        modo_actual = self.modos_filtro[self.indice_filtro]
+
+        self.bt1.config(text=modo_actual)
+
+        ventas_filtradas = ctrl.obtener_ventas_filtradas(modo_actual)
+
+        self.cargar_ventas(datos=ventas_filtradas)
+
+    def descargar_pdf(self):
+        modo_reporte = self.bt1.cget("text")
+
+        from tkinter import messagebox
+        try:
+            ctrl.exportar_ventas_pdf(modo_reporte)
+            messagebox.showinfo("Éxito", f"¡Reporte PDF ({modo_reporte}) generado correctamente en Descargas!")
+        except Exception as e:
+            messagebox.showerror("Error", f"No se pudo generar el PDF: {e}")
 
     def widgets(self):
         labelframe=tk.LabelFrame(self,font="arial 12 bold",bg="#C6D9E3") 
@@ -466,5 +577,7 @@ class Ventas(tk.Frame):
         boton_pagar=tk.Button(self,text="Pagar",font="arial 14 bold",bg="#4CAF50",fg="white",command=self.realizar_pago)
         boton_pagar.place(x=70,y=575,width=220,height=40)
 
-        """ boton_ver_ventas=tk.Button(self,text="Ver Ventas Realizadas",font="arial 14 bold",bg="#2196F3",fg="white")
-        boton_ver_ventas.place(x=350,y=575,width=220,height=40)"""
+        boton_ver_ventas=tk.Button(self,text="Ver Ventas Realizadas",font="arial 14 bold",bg="#2196F3",fg="white",command=self.ver_ventas)
+        boton_ver_ventas.place(x=350,y=575,width=220,height=40)
+
+   

@@ -85,6 +85,7 @@ class Informacion(tk.Frame):
         self.boton_guardar_admin.place(x=10, y=410, width=460, height=40)
 
         self.cargar_datos_existentes()
+        self.cargar_perfil_existente()
 
     def guardar_info_negocio(self):
         nom = self.entry_nombre.get()
