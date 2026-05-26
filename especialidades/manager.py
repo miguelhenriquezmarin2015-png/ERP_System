@@ -10,7 +10,7 @@ from especialidades.container import Container
 class Manager(Tk):
     def __init__(self, *args,**kwagrs):
         super().__init__(*args,**kwagrs)
-        self.title("Mini Marker")
+        self.title("Mini Market")
         self.geometry("1200x700+120+20")
         self.resizable(False,False)
 

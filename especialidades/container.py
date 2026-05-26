@@ -66,7 +66,7 @@ class Container(tk.Frame):
         self.btn_clientes=Button(frame2,fg="black",text="Clientes",font="sans 16 bold",command=self.clientes)
         self.btn_clientes.place(x=400,y=0,width=200,height=50)
 
-        self.btn_finanzas=Button(frame2,fg="black",text="Fianzas",font="sans 16 bold",command=self.finanzas)
+        self.btn_finanzas=Button(frame2,fg="black",text="Finanzas",font="sans 16 bold",command=self.finanzas)
         self.btn_finanzas.place(x=600,y=0,width=200,height=50)
 
         self.btn_proveedor=Button(frame2,fg="black",text="Proveedor",font="sans 16 bold",command=self.proveedor)
