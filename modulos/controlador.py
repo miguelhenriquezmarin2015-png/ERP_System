@@ -229,8 +229,8 @@ def obtener_productos_por_vencer():
             WHERE perecedero = 1 
               AND vencimiento IS NOT NULL 
               AND vencimiento != 'No Aplica'
-              AND vencimiento <= date('now', '+7 days')
-              AND vencimiento >= date('now');
+              AND vencimiento <= DATE_ADD(CURDATE(), INTERVAL 7 DAY)
+              AND vencimiento >= DATE_ADD(CURDATE(), INTERVAL 7 DAY);
         """
         cursor.execute(query)
         return cursor.fetchall()
@@ -400,8 +400,8 @@ def actualizar_usuario(id_usuario, nombre, rol, sueldo):
 def guardar_empresa(nombre, direccion, telefono, email, descripcion):
     conn = conectar()
     cursor = conn.cursor()
-    instruccion = """INSERT OR REPLACE INTO empresa (id, nombre, direccion, telefono, email, descripcion)
-                     VALUES (1, %s, %s, %s, %s, %s)"""
+    instruccion = """INSERT INTO empresa (id, nombre, direccion, telefono, email, descripcion)
+                     VALUES (1, %s, %s, %s, %s, %s) ON DUPLICATE KEY UPDATE(nombre), direccion=VALUES(direccion);"""
     cursor.execute(instruccion, (nombre, direccion, telefono, email, descripcion))
     conn.commit()
     conn.close()
@@ -441,13 +441,13 @@ def exportar_ventas_pdf(modo):
     condicion = ""
 
     if modo == "Diario":
-        condicion = " WHERE fecha >= date('now', '-1 day')"
+        condicion = " WHERE fecha >= DATE_SUB(CURDATE(), INTERVAL 1 DAY)"
     elif modo == "Semanal":
-        condicion = " WHERE fecha >= date('now', '-7 days')"
+        condicion = " WHERE fecha >= DATE_SUB(CURDATE(), INTERVAL 7 DAY)"
     elif modo == "Quincenal":
-        condicion = " WHERE fecha >= date('now', '-15 days')"
+        condicion = " WHERE fecha >= DATE_SUB(CURDATE(), INTERVAL 15 DAY)"
     elif modo == "Mensual":
-        condicion = " WHERE fecha >= date('now', '-30 days')"
+        condicion = " WHERE fecha >= DATE_SUB(CURDATE(), INTERVAL 30  DAY)"
     else:
         condicion = "" 
         
@@ -518,7 +518,7 @@ def guardar_venta_completa(numero_factura, cliente, lista_productos, total):
     cursor = conn.cursor()
     
     try:
-        instruccion_venta = "INSERT INTO ventas (numero_factura, cliente, fecha, total) VALUES (%s, %s, datetime('now', 'localtime'), %s)"
+        instruccion_venta = "INSERT INTO ventas (numero_factura, cliente, fecha, total) VALUES (%s, %s, NOW(), %s)"
         cursor.execute(instruccion_venta, (numero_factura, cliente, total))
         
         venta_id = cursor.lastrowid        
@@ -590,13 +590,13 @@ def obtener_ventas_filtradas(modo):
     condicion = ""
 
     if modo == "Diario":
-        condicion = " WHERE fecha >= date('now', '-1 day')"
+        condicion = " WHERE fecha >= DATE_SUB(CURDATE(), INTERVAL 1 DAY)"
     elif modo == "Semanal":
-        condicion = " WHERE fecha >= date('now', '-7 days')"
+        condicion = " WHERE fecha >= DATE_SUB(CURDATE(), INTERVAL 7 DAY)"
     elif modo == "Quincenal":
-        condicion = " WHERE fecha >= date('now', '-15 days')"
+        condicion = " WHERE fecha >= DATE_SUB(CURDATE(), INTERVAL 15 DAY)"
     elif modo == "Mensual":
-        condicion = " WHERE fecha >= date('now', '-30 days')"
+        condicion = " WHERE fecha >= DATE_SUB(CURDATE, INTERVAL 30 DAY)"
 
     query_final = query + condicion + " ORDER BY id DESC"
     cursor.execute(query_final)
@@ -714,7 +714,7 @@ def agregar_producto_a_catalogo(id_proveedor, nombre_prod, costo, precio):
     cursor = conn.cursor()
     try:
         cursor.execute("""
-            INSERT OR IGNORE INTO inventario (nombre, costo, precio, stock) 
+            INSERT IGNORE INTO inventario (nombre, costo, precio, stock) 
             VALUES (%s, %s, %s, 0);
         """, (nombre_prod, costo, precio))
         
@@ -722,7 +722,7 @@ def agregar_producto_a_catalogo(id_proveedor, nombre_prod, costo, precio):
         id_producto = cursor.fetchone()[0]
         
         cursor.execute("""
-            INSERT OR IGNORE INTO proveedor_catalogo (id_proveedor, id_producto) 
+            INSERT IGNORE INTO proveedor_catalogo (id_proveedor, id_producto) 
             VALUES (%s, %s);
         """, (id_proveedor, id_producto))
         
