@@ -66,7 +66,6 @@ class Inventario(tk.Frame):
             self.bt3.config(text="VER BAJO STOCK", bg="#F44336")            
             self.filtro_bajo_stock_activo = False
 
-
     def buscar_articulo(self, event=None):
         if self.filtro_bajo_stock_activo:
             self.bt3.config(text="VER BAJO STOCK", bg="#FFC107")

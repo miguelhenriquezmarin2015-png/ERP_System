@@ -75,7 +75,6 @@ class Clientes(tk.Frame):
             
         self.id_cliente_seleccionado = datos_cliente[0] 
 
-
     def cargar_datos_clientes(self):
         for fila in self.tabla_clientes.get_children():
             self.tabla_clientes.delete(fila)
