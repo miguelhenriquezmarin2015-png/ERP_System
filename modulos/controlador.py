@@ -1,5 +1,6 @@
 #import mysql.connector as sql
-import sqlite3 as sql
+import mysql.conector
+import configparser
 from datetime import datetime
 from reportlab.lib.pagesizes import letter
 from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle
@@ -12,17 +13,36 @@ y cambiar los ? por %s en las consultas"""
 
 #iniciar----
 
+#def conectar():
+ #   """Establece la conexión de red con la computadora servidor local."""
+  #  return conectar(
+   #     host="192.168.1.50",     # <-- La dirección IP local de la computadora Servidor/se tiene que cambiar segun la computadora en la que este la base de datos
+    #    user="root",             # Usuario por defecto de tu servidor local (XAMPP/Laragon)
+     #   password="",             # Contraseña por defecto (vacía en XAMPP)
+      #  database="negocio_db"   
+    #)
 def conectar():
-    """Establece la conexión de red con la computadora servidor local."""
-    return conectar(
-        host="192.168.1.50",     # <-- La dirección IP local de la computadora Servidor/se tiene que cambiar segun la computadora en la que este la base de datos
-        user="root",             # Usuario por defecto de tu servidor local (XAMPP/Laragon)
-        password="",             # Contraseña por defecto (vacía en XAMPP)
-        database="negocio_db"   
-    )
+    try:
+        config = configparser.ConfigParser()
+        ruta_config = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'config.ini')
+        d(ruta_config)
+
+        conexion = mysql.connector.connect(
+            host=config['BASEDATOS']['IP_SERVIDOR'],
+            user=config['BASEDATOS']['Usuario'],
+            password=config["BASEDATOS"]['Clave'],
+            database=config["BASEDATOS"]['NombreDB']
+        )
+
+        return conexion
+    except Exception as e:
+        print(f"Error crítico al conectar a la base de datos: {e}")
+        return None
+
+
 
 def create_all_tables():
-    conn = sql.connect('negocio.db')
+    conn = conectar()
     cursor = conn.cursor()
 
     cursor.execute("""
@@ -157,7 +177,7 @@ create_all_tables()
 #inventario -------
 
 def guardar_articulo(nombre,costo,precio,stock,perecedero,vencimiento):
-    conn = sql.connect('negocio.db')
+    conn = conectar()
     cursor = conn.cursor()
     instruccion="INSERT INTO inventario (nombre, costo, precio, stock, perecedero, vencimiento) VALUES (?,?,?,?,?,?)"
     cursor.execute(instruccion, (nombre, costo, precio, stock, perecedero, vencimiento))
@@ -165,7 +185,7 @@ def guardar_articulo(nombre,costo,precio,stock,perecedero,vencimiento):
     conn.close()
 
 def obtener_articulos():
-    conn = sql.connect('negocio.db')
+    conn = conectar()
     cursor = conn.cursor()
     cursor.execute("SELECT id, nombre, costo, precio, stock, perecedero, vencimiento FROM inventario")
     articulos = cursor.fetchall()
@@ -173,7 +193,7 @@ def obtener_articulos():
     return articulos
 
 def buscar_articulo(nombre):
-    conn = sql.connect('negocio.db')
+    conn = conectar()
     cursor = conn.cursor()
     instruccion="SELECT * FROM inventario where nombre LIKE ?"
     termino_busqueda = f"%{nombre}%"
@@ -183,7 +203,7 @@ def buscar_articulo(nombre):
     return resultado
 
 def mostrar_vender(nombre):
-    conn = sql.connect('negocio.db')
+    conn = conectar()
     cursor = conn.cursor()
     instruccion = "SELECT costo, precio, stock FROM inventario WHERE nombre = ?"
     cursor.execute(instruccion, (nombre,))
@@ -192,7 +212,7 @@ def mostrar_vender(nombre):
     return resultado 
 
 def mostrar_inventario_baja_cantidad():
-    conn = sql.connect('negocio.db')
+    conn = conectar()
     cursor = conn.cursor()
     cursor.execute("SELECT * FROM inventario WHERE stock < 15")
     resultado = cursor.fetchall()
@@ -200,7 +220,7 @@ def mostrar_inventario_baja_cantidad():
     return resultado
 
 def obtener_productos_por_vencer():
-    conn = sql.connect('negocio.db')
+    conn = conectar()
     cursor = conn.cursor()
     try:
         query = """
@@ -221,7 +241,7 @@ def obtener_productos_por_vencer():
         conn.close()
 
 def actualizar_articulo(id, nombre, costo, precio, stock, perecedero,vencimiento):
-    conn = sql.connect('negocio.db')
+    conn = conectar()
     cursor = conn.cursor()
     instruccion = "UPDATE inventario SET nombre = ?, costo = ?, precio = ?, stock = ?, perecedero = ?, vencimiento = ? WHERE id = ?"
     cursor.execute(instruccion, (nombre, costo, precio, stock, perecedero,vencimiento, id))
@@ -229,7 +249,7 @@ def actualizar_articulo(id, nombre, costo, precio, stock, perecedero,vencimiento
     conn.close()
 
 def reducir_stock(nombre, cantidad):
-    conn = sql.connect('negocio.db')
+    conn = conectar()
     cursor = conn.cursor()
     
     try:
@@ -252,7 +272,7 @@ def reducir_stock(nombre, cantidad):
         conn.close()
 
 def restaurar_stock(nombre, cantidad):
-    conn = sql.connect('negocio.db')
+    conn = conectar()
     cursor = conn.cursor()
     try:
         cursor.execute("SELECT stock FROM inventario WHERE nombre = ?", (nombre,))
