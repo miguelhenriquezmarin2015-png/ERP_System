@@ -4,7 +4,7 @@ from PIL import Image, ImageTk
 import sys 
 import os
 from especialidades.container import Container
-from modulos.controlador import validacion
+from especialidades.controlador import validacion
 
 class PantallaBase(tk.Frame):
     def __init__(self, padre, controller):

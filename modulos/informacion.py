@@ -1,7 +1,7 @@
 from tkinter import *
 from tkinter import ttk,messagebox,filedialog
 import tkinter as tk
-import modulos.controlador as ctrl
+import especialidades.controlador as ctrl
 import csv
 
 class Informacion(tk.Frame):

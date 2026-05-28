@@ -1,7 +1,7 @@
 from tkinter import *
 import tkinter as tk
 from tkinter import ttk,messagebox
-import modulos.controlador as ctrl
+import especialidades.controlador as ctrl
 
 class Finanzas(tk.Frame):
     def __init__(self, padre,controller):
