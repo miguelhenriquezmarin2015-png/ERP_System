@@ -289,15 +289,6 @@ def eliminar_articulo(id):
 
 #usuario-----
 
-def validacion(user,pas):
-    conn = sql.connect('negocio.db')
-    cursor = conn.cursor()
-    instruccion="SELECT * FROM usuarios where username=? and password=?"
-    cursor.execute(instruccion, (user, pas))
-    resultado = cursor.fetchone()
-    conn.close()
-    return resultado is not None
-
 def buscar_usuario(username):
     conn = sql.connect('negocio.db')
     cursor = conn.cursor()
@@ -374,6 +365,27 @@ def actualizar_usuario(id_usuario, nombre, rol, sueldo):
         return False, f"Error al actualizar: {str(e)}"
     finally:
         conexion.close()
+
+def validacion(usuario, contrasena):
+    conn = sql.connect('negocio.db')
+    cursor = conn.cursor()
+    try:
+        cursor.execute("SELECT password, rol FROM usuarios WHERE username = ?;", (usuario,))
+        resultado = cursor.fetchone()
+        
+        if resultado:
+            db_password = resultado[0]
+            db_rol = resultado[1]
+            
+            if db_password == contrasena:
+                return str(db_rol).strip()
+                
+        return None
+    except Exception as e:
+        print(f"Error en validación: {str(e)}")
+        return None
+    finally:
+        conn.close()
 
 #empresa-----
 
@@ -765,6 +777,4 @@ def recibir_pedido_pendiente_db(id_pedido):
         return False
     finally:
         conn.close()
-
-
 

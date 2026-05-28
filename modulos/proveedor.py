@@ -102,17 +102,25 @@ class Proveedor(tk.Frame):
             frame_acciones = tk.Frame(self.scrollbar_frame, bg=color_fila, relief="groove", bd=1)
             frame_acciones.grid(row=row_idx, column=4, sticky="nsew")
 
-            btn_cat = tk.Button(frame_acciones, text="Catálogo", bg="#4CAF50", fg="white", font=("arial", 10, "bold"), bd=0, width=9,
-                                command=lambda p=prov: self.ver_catalogo_articulos(p))
-            btn_cat.pack(side="left", padx=3, pady=5)
+            def desplegar_menu(b=None, p=prov, id_p=id_prov):
+                menu_popup = tk.Menu(btn_opciones, tearoff=0, font=("arial", 10), bg="white", fg="black", activebackground="#2196F3")
+                
+                menu_popup.add_command(label="📁 Catálogo", command=lambda: self.ver_catalogo_articulos(p))
+                menu_popup.add_command(label="💳 Compras", command=lambda: self.ver_historial_compras(id_p))
+                menu_popup.add_command(label="⏳ Pendientes", command=lambda: self.ver_pedidos_pendientes(id_p))
+                
+                x = btn_opciones.winfo_rootx()
+                y = btn_opciones.winfo_rooty() + btn_opciones.winfo_height()
+                menu_popup.post(x, y)
 
-            btn_com = tk.Button(frame_acciones, text="Compras", bg="#2196F3", fg="white", font=("arial", 10, "bold"), bd=0, width=9,
-                                command=lambda id_p=id_prov: self.ver_historial_compras(id_p))
-            btn_com.pack(side="left", padx=3, pady=5)
-
-            btn_pen = tk.Button(frame_acciones, text="Pendientes", bg="#F44336", fg="white", font=("arial", 10, "bold"), bd=0, width=9,
-                                command=lambda id_p=id_prov: self.ver_pedidos_pendientes(id_p))
-            btn_pen.pack(side="left", padx=3, pady=5)
+            btn_opciones = tk.Button(
+                frame_acciones,
+                text="Opciones ▾",
+                bg="#4A5568", fg="white",
+                font=("arial", 10, "bold"), bd=0, cursor="hand2",
+                command=desplegar_menu 
+            )
+            btn_opciones.pack(side="left", padx=10, pady=5, expand=True)
 
         self.scrollbar_frame.grid_columnconfigure(0, weight=1)
         self.scrollbar_frame.grid_columnconfigure(1, weight=4) 

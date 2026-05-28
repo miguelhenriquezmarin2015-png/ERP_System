@@ -79,7 +79,7 @@ class Informacion(tk.Frame):
         label_rol.place(x=10,y=210)
         
         self.combo_rol = ttk.Combobox(labelemple, font="arial 14", state="readonly")
-        self.combo_rol['values'] = ('Vendedor', 'Administrador', 'Gerente', 'Supervisor')
+        self.combo_rol['values'] = ('Vendedor', 'Administrador', 'Tesorero', 'Encargado')
         self.combo_rol.current(0) 
         self.combo_rol.place(x=250, y=210, width=250)
 
@@ -298,7 +298,7 @@ class Informacion(tk.Frame):
         self.scrollbar_frame.grid_columnconfigure(5, weight=2) # Acciones
 
     def filtrar_por_rol(self):
-        roles = ["Todos", "Vendedor", "Administrador", "Gerente", "Supervisor"]
+        roles = ["Todos", "Vendedor", "Administrador", "Tesorero", "Encargado"]
         
         idx_actual = roles.index(self.filtro_rol_actual)
         idx_siguiente = (idx_actual + 1) % len(roles)
@@ -334,7 +334,7 @@ class Informacion(tk.Frame):
         entry_nom.place(x=10, y=45, width=380, height=30)
         tk.Label(top_modificar, text="Rol del Empleado:", font="arial 10 bold", bg="#C6D9E3").place(y=80, x=10)
         combo_r = ttk.Combobox(top_modificar, font="arial 11", state="readonly")
-        combo_r['values'] = ('Vendedor', 'Administrador', 'Gerente', 'Supervisor')
+        combo_r['values'] = ('Vendedor', 'Administrador', 'Tesorero', 'Encargado')
         combo_r.set(rol)
         combo_r.place(y=105, x=10, width=380, height=30)
 

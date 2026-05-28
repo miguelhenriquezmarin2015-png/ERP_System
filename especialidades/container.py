@@ -1,5 +1,6 @@
 from tkinter import *
 import tkinter as tk
+from tkinter import ttk,messagebox
 import sys
 import os
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
@@ -26,7 +27,6 @@ class Container(tk.Frame):
             frame.place(x=0,y=50,width=1200,height=650)
             
         self.widgets()
-        self.show_frames(Ventas)
         
         controller.protocol("WM_DELETE_WINDOW", self.al_cerrar_programa)
         
@@ -86,5 +86,37 @@ class Container(tk.Frame):
         self.btn_informacion=Button(frame2,fg="black",text="Información",font="sans 16 bold",command=self.informacion)
         self.btn_informacion.place(x=1029,y=0,width=172,height=50)
 
-        self.buttons=[self.btn_ventas,self.btn_inventario,self.btn_clientes,self.btn_finanzas,self.btn_proveedor,self.btn_pedidos,self.btn_informacion]
-        frame2.tkraise()
+        self.buttons = [self.btn_ventas, self.btn_inventario, self.btn_clientes, self.btn_finanzas, self.btn_proveedor, self.btn_pedidos, self.btn_informacion]
+
+    def aplicar_permisos_rol(self, rol):  
+        rol_limpio = str(rol).strip().lower()
+
+        for boton in self.buttons:
+            boton.config(state="normal")
+
+        if "vendedor" in rol_limpio:
+            self.btn_inventario.config(state="disabled")
+            self.btn_finanzas.config(state="disabled")
+            self.btn_proveedor.config(state="disabled")
+            self.btn_pedidos.config(state="disabled")
+            self.btn_informacion.config(state="disabled")
+            self.ventas()
+
+        elif "tesorero" in rol_limpio:
+            self.btn_ventas.config(state="disabled")
+            self.btn_inventario.config(state="disabled")
+            self.btn_clientes.config(state="disabled")
+            self.btn_informacion.config(state="disabled")
+            self.finanzas()
+
+        elif "encargado" in rol_limpio:
+            self.btn_ventas.config(state="disabled")
+            self.btn_clientes.config(state="disabled")
+            self.btn_finanzas.config(state="disabled")
+            self.btn_informacion.config(state="disabled")
+            self.inventario()
+
+        elif "administrador" in rol_limpio:
+            self.ventas() 
+
+        self.update_idletasks()

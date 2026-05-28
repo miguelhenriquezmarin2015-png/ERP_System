@@ -33,7 +33,8 @@ class Manager(Tk):
     def show_frame(self,container):
         frame=self.frames[container]
         frame.tkraise()
-
+        return frame
+    
 def main():
     app=Manager()
     app.mainloop()
