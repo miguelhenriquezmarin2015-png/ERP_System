@@ -25,7 +25,6 @@ class Container(tk.Frame):
             frame.place(x=0,y=50,width=1200,height=650)
             
         self.widgets()
-        #cambiar aqui al terminar
         self.show_frames(Ventas)
         
         controller.protocol("WM_DELETE_WINDOW", self.al_cerrar_programa)
@@ -44,6 +43,12 @@ class Container(tk.Frame):
         self.show_frames(Ventas)
     def inventario(self):
         self.show_frames(Inventario)
+        instancia_inventario = self.frames.get(Inventario)
+        
+        if instancia_inventario:
+            instancia_inventario.verificar_alertas_stock()
+            instancia_inventario.verificar_alertas_vencimiento()
+            
     def clientes(self):
         self.show_frames(Clientes)
     def finanzas(self):

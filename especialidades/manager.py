@@ -4,7 +4,6 @@ import sys
 import os
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 from modulos.login import Login
-from modulos.login import Registro
 from especialidades.container import Container
 
 class Manager(Tk):
@@ -19,14 +18,14 @@ class Manager(Tk):
         container.configure(bg="#C6D9E3")
 
         self.frames={}
-        for i in(Login,Registro,Container):
+        for i in(Login,Container):
             frame=i(container, self)
             self.frames[i]=frame
             frame.grid(row=0,column=0,sticky="nsew")
             container.grid_rowconfigure(0, weight=1)
             container.grid_columnconfigure(0, weight=1)
         #cambiar aqui al terminar el programa
-        self.show_frame(Container)
+        self.show_frame(Login)
 
         self.style=ttk.Style()
         self.style.theme_use("clam")

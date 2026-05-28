@@ -6,7 +6,6 @@ import os
 from especialidades.container import Container
 from modulos.controlador import validacion
 
-# --- CLASE BASE (LÓGICA COMPARTIDA) ---
 class PantallaBase(tk.Frame):
     def __init__(self, padre, controller):
         super().__init__(padre)
@@ -47,7 +46,6 @@ class PantallaBase(tk.Frame):
     def validacion(self, user,pas):
         return len(user) > 0 and len(pas) > 0
 
-# --- CLASE LOGIN ---
 class Login(PantallaBase):
     def __init__(self, padre, controller):
         super().__init__(padre, controller)
@@ -94,47 +92,4 @@ class Login(PantallaBase):
             self.controller.show_frame(Container) 
         else:
             tk.messagebox.showerror("Error", "Usuario o contraseña incorrectos")
-
-
-# --- CLASE REGISTRO ---
-class Registro(PantallaBase):
-    def __init__(self, padre, controller):
-        super().__init__(padre, controller)
-        self.widgets()
-
-    def widgets(self):
-        self.crear_fondo_comun()
-        
-        # Cuadro un poco más alto para que quepan los 3 campos
-        frame_reg = tk.Frame(self, bg="#FFFFFF", highlightbackground="#D3D3D3", highlightthickness=1)
-        frame_reg.place(x=400, y=70, width=400, height=560)
-
-        tk.Label(frame_reg, text="CREAR CUENTA", font="arial 16 bold", bg="white", fg="#333333").place(x=70, y=40)
-
-        # 1. Nuevo Usuario
-        self.lbl_u = tk.Label(frame_reg, text="Nuevo Usuario", font="arial 12", bg="white", fg="gray")
-        self.lbl_u.place(x=70, y=120)
-        self.ent_u = tk.Entry(frame_reg, font="arial 14", bd=0, highlightthickness=1, highlightbackground="lightgray")
-        self.ent_u.place(x=70, y=120, width=260, height=35)
-        self.configurar_animacion(self.ent_u, self.lbl_u, 95, 120)
-
-        # 2. Nueva Contraseña
-        self.lbl_p = tk.Label(frame_reg, text="Nueva Contraseña", font="arial 12", bg="white", fg="gray")
-        self.lbl_p.place(x=70, y=200)
-        self.ent_p = tk.Entry(frame_reg, font="arial 14", bd=0, highlightthickness=1, highlightbackground="lightgray", show="*")
-        self.ent_p.place(x=70, y=200, width=260, height=35)
-        self.configurar_animacion(self.ent_p, self.lbl_p, 175, 200)
-
-        # 3. Código de Registro (Tu campo especial)
-        self.lbl_k = tk.Label(frame_reg, text="Código de Registro", font="arial 12", bg="white", fg="gray")
-        self.lbl_k.place(x=70, y=280)
-        self.ent_k = tk.Entry(frame_reg, font="arial 14", bd=0, highlightthickness=1, highlightbackground="lightgray", show="*")
-        self.ent_k.place(x=70, y=280, width=260, height=35)
-        self.configurar_animacion(self.ent_k, self.lbl_k, 255, 280)
-
-        # Botón para registrar
-        tk.Button(frame_reg, text="CONFIRMAR REGISTRO", bg="#4CAF50", fg="white", font="arial 12 bold", bd=0, cursor="hand2").place(x=70, y=360, width=260, height=45)
-
-        """ # Botón para regresar si ya tienes cuenta
-        tk.Button(frame_reg, text="¿Ya tienes cuenta? Inicia sesión", font="arial 10", bg="white", fg="#2196F3", bd=0, cursor="hand2",
-                  command=lambda: self.controller.show_frame(Login)).place(x=70, y=430, width=260)"""
+        self.limpiar_campos(self.ent_u, self.ent_p)

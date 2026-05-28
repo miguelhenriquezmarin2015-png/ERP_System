@@ -1,4 +1,5 @@
-import mysql.connector as sql
+#import mysql.connector as sql
+import sqlite3 as sql
 from datetime import datetime
 from reportlab.lib.pagesizes import letter
 from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle
@@ -6,11 +7,14 @@ from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib import colors
 import os
 
+"""al terminar el programa cambiar de base de datos mysql por ende cambiar: sql.connect('negocio.db') por conectar() 
+y cambiar los ? por %s en las consultas"""
+
 #iniciar----
 
 def conectar():
     """Establece la conexión de red con la computadora servidor local."""
-    return sql.connect(
+    return conectar(
         host="192.168.1.50",     # <-- La dirección IP local de la computadora Servidor/se tiene que cambiar segun la computadora en la que este la base de datos
         user="root",             # Usuario por defecto de tu servidor local (XAMPP/Laragon)
         password="",             # Contraseña por defecto (vacía en XAMPP)
@@ -18,7 +22,7 @@ def conectar():
     )
 
 def create_all_tables():
-    conn = conectar()
+    conn = sql.connect('negocio.db')
     cursor = conn.cursor()
 
     cursor.execute("""
@@ -54,6 +58,7 @@ def create_all_tables():
         "telefono"        TEXT,
         "correo"          TEXT,
         "rol"             TEXT NOT NULL DEFAULT 'Vendedor',
+        "sueldo"    REAL NOT NULL DEFAULT 0.0, 
         PRIMARY KEY("id" AUTOINCREMENT)
     );
     """)
@@ -84,20 +89,64 @@ def create_all_tables():
 
     cursor.execute("""
     CREATE TABLE IF NOT EXISTS "inventario" (
-        "id"     INTEGER NOT NULL,
-        "nombre" TEXT NOT NULL,
-        "costo"  REAL NOT NULL,
-        "precio" REAL NOT NULL,
-        "stock"  INTEGER NOT NULL,
-        PRIMARY KEY("id" AUTOINCREMENT)
+        "id"          INTEGER NOT NULL,
+        "nombre"      TEXT NOT NULL UNIQUE,
+        "costo"       REAL NOT NULL,
+        "precio"      REAL NOT NULL,
+        "stock"       INTEGER NOT NULL,
+        "perecedero"  INTEGER NOT NULL DEFAULT 0, -- 0 = No, 1 = Sí
+        "vencimiento" TEXT,                   
+        PRIMARY KEY("id" AUTOINCREMENT)         
     );
-    """)
+    """)    
 
     cursor.execute("SELECT COUNT(*) FROM usuarios")
     if cursor.fetchone()[0] == 0:
         cursor.execute("""
         INSERT INTO usuarios (id, username, password, rol) 
         VALUES (1, 'admin', 'admin', 'Administrador')
+        """)
+
+    cursor.execute("""
+            CREATE TABLE IF NOT EXISTS "proveedores" (
+                "id" INTEGER PRIMARY KEY AUTOINCREMENT,
+                "nombre" TEXT NOT NULL,
+                "rif" TEXT NOT NULL UNIQUE,
+                "contacto" TEXT NOT NULL
+            );
+        """)
+    
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS "proveedor_catalogo" (
+            "id_proveedor" INTEGER NOT NULL,
+            "id_producto"  INTEGER NOT NULL,
+            PRIMARY KEY("id_proveedor", "id_producto"),
+            FOREIGN KEY("id_proveedor") REFERENCES "proveedores"("id") ON DELETE CASCADE,
+            FOREIGN KEY("id_producto") REFERENCES "inventario"("id") ON DELETE CASCADE
+        );
+        """)
+
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS "compras_proveedor" (
+            "id"            INTEGER PRIMARY KEY AUTOINCREMENT,
+            "id_proveedor"  INTEGER NOT NULL,
+            "fecha"         TEXT NOT NULL,
+            "total_pagado"  REAL NOT NULL,
+            "detalles"      TEXT, -- Nota o descripción de lo que se compró
+            FOREIGN KEY("id_proveedor") REFERENCES "proveedores"("id") ON DELETE CASCADE
+        );
+        """)
+
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS "pedidos_pendientes" (
+            "id"            INTEGER PRIMARY KEY AUTOINCREMENT,
+            "id_proveedor"  INTEGER NOT NULL,
+            "producto"      TEXT NOT NULL,
+            "cantidad"      INTEGER NOT NULL,
+            "monto_estimado" REAL NOT NULL,
+            "estado"        TEXT NOT NULL DEFAULT 'Pendiente', -- Puede ser 'Pendiente' o 'Recibido'
+            FOREIGN KEY("id_proveedor") REFERENCES "proveedores"("id") ON DELETE CASCADE
+        );
         """)
 
     conn.commit()
@@ -107,26 +156,26 @@ create_all_tables()
 
 #inventario -------
 
-def guardar_articulo(nombre,costo,precio,stock):
-    conn = conectar()
+def guardar_articulo(nombre,costo,precio,stock,perecedero,vencimiento):
+    conn = sql.connect('negocio.db')
     cursor = conn.cursor()
-    instruccion="INSERT INTO inventario (nombre, costo, precio, stock) VALUES (%s,%s,%s,%s)"
-    cursor.execute(instruccion, (nombre, costo, precio, stock))
+    instruccion="INSERT INTO inventario (nombre, costo, precio, stock, perecedero, vencimiento) VALUES (?,?,?,?,?,?)"
+    cursor.execute(instruccion, (nombre, costo, precio, stock, perecedero, vencimiento))
     conn.commit()
     conn.close()
 
 def obtener_articulos():
-    conn = sql.connect("negocio.db")
+    conn = sql.connect('negocio.db')
     cursor = conn.cursor()
-    cursor.execute("SELECT id, nombre, costo, precio, stock FROM inventario")
+    cursor.execute("SELECT id, nombre, costo, precio, stock, perecedero, vencimiento FROM inventario")
     articulos = cursor.fetchall()
     conn.close()
     return articulos
 
 def buscar_articulo(nombre):
-    conn = conectar()
+    conn = sql.connect('negocio.db')
     cursor = conn.cursor()
-    instruccion="SELECT * FROM inventario where nombre LIKE %s"
+    instruccion="SELECT * FROM inventario where nombre LIKE ?"
     termino_busqueda = f"%{nombre}%"
     cursor.execute(instruccion, (termino_busqueda,))
     resultado = cursor.fetchall()
@@ -134,43 +183,64 @@ def buscar_articulo(nombre):
     return resultado
 
 def mostrar_vender(nombre):
-    conn = conectar()
+    conn = sql.connect('negocio.db')
     cursor = conn.cursor()
-    instruccion = "SELECT costo, precio, stock FROM inventario WHERE nombre = %s"
+    instruccion = "SELECT costo, precio, stock FROM inventario WHERE nombre = ?"
     cursor.execute(instruccion, (nombre,))
     resultado = cursor.fetchone()
     conn.close()
     return resultado 
 
 def mostrar_inventario_baja_cantidad():
-    conn = conectar()
+    conn = sql.connect('negocio.db')
     cursor = conn.cursor()
     cursor.execute("SELECT * FROM inventario WHERE stock < 15")
     resultado = cursor.fetchall()
     conn.close()
     return resultado
 
-def actualizar_articulo(id, nombre, costo, precio, stock):
-    conn = conectar()
+def obtener_productos_por_vencer():
+    conn = sql.connect('negocio.db')
     cursor = conn.cursor()
-    instruccion = "UPDATE inventario SET nombre = %s, costo = %s, precio = %s, stock = %s WHERE id = %s"
-    cursor.execute(instruccion, (nombre, costo, precio, stock, id))
+    try:
+        query = """
+            SELECT nombre, vencimiento 
+            FROM inventario 
+            WHERE perecedero = 1 
+              AND vencimiento IS NOT NULL 
+              AND vencimiento != 'No Aplica'
+              AND vencimiento <= date('now', '+7 days')
+              AND vencimiento >= date('now');
+        """
+        cursor.execute(query)
+        return cursor.fetchall()
+    except Exception as e:
+        print(f"Error al verificar vencimientos: {str(e)}")
+        return []
+    finally:
+        conn.close()
+
+def actualizar_articulo(id, nombre, costo, precio, stock, perecedero,vencimiento):
+    conn = sql.connect('negocio.db')
+    cursor = conn.cursor()
+    instruccion = "UPDATE inventario SET nombre = ?, costo = ?, precio = ?, stock = ?, perecedero = ?, vencimiento = ? WHERE id = ?"
+    cursor.execute(instruccion, (nombre, costo, precio, stock, perecedero,vencimiento, id))
     conn.commit()
     conn.close()
 
 def reducir_stock(nombre, cantidad):
-    conn = conectar()
+    conn = sql.connect('negocio.db')
     cursor = conn.cursor()
     
     try:
-        cursor.execute("SELECT stock FROM inventario WHERE nombre = %s", (nombre,))
+        cursor.execute("SELECT stock FROM inventario WHERE nombre = ?", (nombre,))
         resultado = cursor.fetchone()
         
         if resultado:
             stock_actual = resultado[0]
             nuevo_stock = stock_actual - cantidad
             
-            cursor.execute("UPDATE inventario SET stock = %s WHERE nombre = %s", (nuevo_stock, nombre))
+            cursor.execute("UPDATE inventario SET stock = ? WHERE nombre = ?", (nuevo_stock, nombre))
             conn.commit()
             print(f"Stock actualizado para {nombre}: {nuevo_stock}")
             
@@ -182,14 +252,14 @@ def reducir_stock(nombre, cantidad):
         conn.close()
 
 def restaurar_stock(nombre, cantidad):
-    conn = conectar()
+    conn = sql.connect('negocio.db')
     cursor = conn.cursor()
     try:
-        cursor.execute("SELECT stock FROM inventario WHERE nombre = %s", (nombre,))
+        cursor.execute("SELECT stock FROM inventario WHERE nombre = ?", (nombre,))
         resultado = cursor.fetchone()
         if resultado:
             nuevo_stock = resultado[0] + cantidad
-            cursor.execute("UPDATE inventario SET stock = %s WHERE nombre = %s", (nuevo_stock, nombre))
+            cursor.execute("UPDATE inventario SET stock = ? WHERE nombre = ?", (nuevo_stock, nombre))
             conn.commit()
     except Exception as e:
         conn.rollback()
@@ -198,10 +268,10 @@ def restaurar_stock(nombre, cantidad):
         conn.close()
    
 def obtener_stock_actual(nombre_producto):
-    conexion = conectar()
+    conexion = sql.connect('negocio.db')
     cursor = conexion.cursor()
     
-    query = "SELECT stock FROM inventario WHERE nombre = %s"
+    query = "SELECT stock FROM inventario WHERE nombre = ?"
     cursor.execute(query, (nombre_producto,))
     resultado = cursor.fetchone()
     
@@ -210,9 +280,9 @@ def obtener_stock_actual(nombre_producto):
     return resultado[0] if resultado else 0
 
 def eliminar_articulo(id):
-    conn = conectar()
+    conn = sql.connect('negocio.db')
     cursor = conn.cursor()
-    instruccion="DELETE FROM inventario WHERE id=%s"
+    instruccion="DELETE FROM inventario WHERE id=?"
     cursor.execute(instruccion, (id,))
     conn.commit()
     conn.close()
@@ -220,38 +290,104 @@ def eliminar_articulo(id):
 #usuario-----
 
 def validacion(user,pas):
-    conn = conectar()
+    conn = sql.connect('negocio.db')
     cursor = conn.cursor()
-    instruccion="SELECT * FROM usuarios where username=%s and password=%s"
+    instruccion="SELECT * FROM usuarios where username=? and password=?"
     cursor.execute(instruccion, (user, pas))
     resultado = cursor.fetchone()
     conn.close()
     return resultado is not None
 
 def buscar_usuario(username):
-    conn = conectar()
+    conn = sql.connect('negocio.db')
     cursor = conn.cursor()
-    instruccion="SELECT * FROM usuarios where username LIKE %s"
+    instruccion="SELECT * FROM usuarios where username LIKE ?"
     termino_busqueda = f"%{username}%"
     cursor.execute(instruccion, (termino_busqueda,))
     resultado = cursor.fetchone()
     conn.close()
     return resultado
 
+def registrar_usuario(username, password, nombre, cedula, telefono, correo, rol, sueldo):
+    conexion = sql.connect("negocio.db")
+    cursor = conexion.cursor()
+    
+    intruccion= """
+    INSERT INTO "usuarios" ("username", "password", "nombre", "cedula", "telefono", "correo", "rol", "sueldo")
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?);
+    """
+    
+    try:
+        cursor.execute(intruccion, (username, password, nombre, cedula, telefono, correo, rol, sueldo))
+        conexion.commit()
+        return True, f"Empleado '{username}' registrado correctamente."
+        
+    except sql.IntegrityError:
+        return False, f"El nombre de usuario '{username}' ya existe en el sistema."
+        
+    except Exception as e:
+        return False, f"Ocurrió un error inesperado: {str(e)}"
+        
+    finally:
+        conexion.close()
+
+def obtener_empleados():
+    conexion = sql.connect("negocio.db")
+    cursor = conexion.cursor()
+    
+    query = "SELECT id, username, nombre, cedula, telefono, correo, rol, sueldo FROM usuarios;"
+    
+    try:
+        cursor.execute(query)
+        resultados = cursor.fetchall()
+        return resultados
+    except Exception as e:
+        print(f"Error al consultar empleados: {str(e)}")
+        return []
+    finally:
+        conexion.close()
+
+def eliminar_usuario(id_usuario):
+    conexion = sql.connect("negocio.db")
+    cursor = conexion.cursor()
+    try:
+        cursor.execute("DELETE FROM usuarios WHERE id = ?;", (id_usuario,))
+        conexion.commit()
+        return True, "Empleado eliminado correctamente."
+    except Exception as e:
+        return False, f"No se pudo eliminar: {str(e)}"
+    finally:
+        conexion.close()
+
+def actualizar_usuario(id_usuario, nombre, rol, sueldo):
+    conexion = sql.connect("negocio.db")
+    cursor = conexion.cursor()
+    try:
+        cursor.execute("""
+            UPDATE usuarios 
+            SET nombre = ?, rol = ?, sueldo = ? 
+            WHERE id = ?;
+        """, (nombre, rol, sueldo, id_usuario))
+        conexion.commit()
+        return True, "Datos del empleado actualizados con éxito."
+    except Exception as e:
+        return False, f"Error al actualizar: {str(e)}"
+    finally:
+        conexion.close()
 
 #empresa-----
 
 def guardar_empresa(nombre, direccion, telefono, email, descripcion):
-    conn = conectar()
+    conn = sql.connect('negocio.db')
     cursor = conn.cursor()
     instruccion = """INSERT OR REPLACE INTO empresa (id, nombre, direccion, telefono, email, descripcion)
-                     VALUES (1, %s, %s, %s, %s, %s)"""
+                     VALUES (1, ?, ?, ?, ?, ?)"""
     cursor.execute(instruccion, (nombre, direccion, telefono, email, descripcion))
     conn.commit()
     conn.close()
 
 def obtener_empresa():
-    conn = conectar()
+    conn = sql.connect('negocio.db')
     cursor = conn.cursor()
     instruccion = "SELECT nombre, direccion, telefono, email, descripcion FROM empresa WHERE id = 1"
     cursor.execute(instruccion)
@@ -260,8 +396,7 @@ def obtener_empresa():
     return resultado
 
 def obtener_perfil_admin():
-    """Recupera los datos completos del usuario principal (ID = 1)."""
-    conn = conectar()
+    conn = sql.connect('negocio.db')
     cursor = conn.cursor()
     cursor.execute("SELECT username, password, nombre, cedula, telefono, correo FROM usuarios WHERE id = 1")
     resultado = cursor.fetchone()
@@ -269,10 +404,10 @@ def obtener_perfil_admin():
     return resultado
 
 def actualizar_perfil_admin(usuario, contrasena, nombre, cedula, telefono, correo):
-    conn = conectar()
+    conn = sql.connect('negocio.db')
     cursor = conn.cursor()
     instruccion = """UPDATE usuarios 
-                     SET username=%s, password=%s, nombre=%s, cedula=%s, telefono=%s, correo=%s 
+                     SET username=?, password=?, nombre=?, cedula=?, telefono=?, correo=? 
                      WHERE id = 1"""
     cursor.execute(instruccion, (usuario, contrasena, nombre, cedula, telefono, correo))
     conn.commit()
@@ -359,17 +494,17 @@ def guardar_venta_completa(numero_factura, cliente, lista_productos, total):
     Guarda de forma segura la cabecera y todos los productos asociados 
     dentro de una misma transacción SQL.
     """
-    conn = conectar()
+    conn = sql.connect('negocio.db')
     cursor = conn.cursor()
     
     try:
-        instruccion_venta = "INSERT INTO ventas (numero_factura, cliente, fecha, total) VALUES (%s, %s, datetime('now', 'localtime'), %s)"
+        instruccion_venta = "INSERT INTO ventas (numero_factura, cliente, fecha, total) VALUES (?, ?, datetime('now', 'localtime'), ?)"
         cursor.execute(instruccion_venta, (numero_factura, cliente, total))
         
         venta_id = cursor.lastrowid        
         instruccion_detalle = """
             INSERT INTO detalles_ventas (venta_id, producto, precio_unitario, cantidad, subtotal) 
-            VALUES (%s, %s, %s, %s, %s)
+            VALUES (?, ?, ?, ?, ?)
         """ 
         datos_detalles = []
         for producto, precio, cantidad, subtotal in lista_productos:
@@ -388,7 +523,7 @@ def guardar_venta_completa(numero_factura, cliente, lista_productos, total):
         conn.close()
 
 def obtener_num_factura():
-    conn = conectar()
+    conn = sql.connect('negocio.db')
     cursor = conn.cursor()
     cursor.execute("SELECT numero_factura FROM ventas ORDER BY id DESC LIMIT 1")
     resultado = cursor.fetchone()
@@ -401,7 +536,7 @@ def obtener_num_factura():
         return "01"
     
 def cargar_productos():
-    conn = conectar()
+    conn = sql.connect('negocio.db')
     cursor = conn.cursor()
     cursor.execute("SELECT nombre FROM inventario")
     productos = cursor.fetchall()
@@ -409,9 +544,9 @@ def cargar_productos():
     return [producto[0] for producto in productos]
 
 def filtrar_nombre(texto_busqueda):
-    conn = conectar()
+    conn = sql.connect('negocio.db')
     cursor = conn.cursor()
-    instruccion = "SELECT nombre FROM inventario WHERE nombre LIKE %s ORDER BY nombre ASC"
+    instruccion = "SELECT nombre FROM inventario WHERE nombre LIKE ? ORDER BY nombre ASC"
     termino = f"%{texto_busqueda}%"
     cursor.execute(instruccion, (termino,))
     resultados = cursor.fetchall()
@@ -452,9 +587,9 @@ def obtener_ventas_filtradas(modo):
 #clientes-----
 
 def guardar_cliente(nombre, telefono, cedula, tipo):
-    conn = conectar()
+    conn = sql.connect('negocio.db')
     cursor = conn.cursor()
-    instruccion="INSERT INTO clientes (nombre, telefono, cedula, tipo) VALUES (%s,%s,%s,%s)"
+    instruccion="INSERT INTO clientes (nombre, telefono, cedula, tipo) VALUES (?,?,?,?)"
     cursor.execute(instruccion, (nombre, telefono, cedula, tipo))
     conn.commit()
     conn.close()
@@ -473,17 +608,17 @@ def modificar_cliente(id_cliente, nombre, telefono, cedula, tipo):
     cursor = conexion.cursor()    
     query = """
         UPDATE clientes 
-        SET nombre = %s, telefono = %s, cedula = %s, tipo = %s 
-        WHERE id = %s
+        SET nombre = ?, telefono = ?, cedula = ?, tipo = ? 
+        WHERE id = ?
     """
     cursor.execute(query, (nombre, telefono, cedula, tipo, id_cliente))
     conexion.commit()
     conexion.close()
 
 def buscar_cliente(nombre):
-    conn = conectar()
+    conn = sql.connect('negocio.db')
     cursor = conn.cursor()
-    instruccion="SELECT * FROM clientes where nombre LIKE %s"
+    instruccion="SELECT * FROM clientes where nombre LIKE ?"
     termino_busqueda = f"%{nombre}%"
     cursor.execute(instruccion, (termino_busqueda,))
     resultado = cursor.fetchall()
@@ -491,9 +626,9 @@ def buscar_cliente(nombre):
     return resultado
 
 def filtrar_clientes_por_nombre(texto_busqueda):
-    conn = conectar()
+    conn = sql.connect('negocio.db')
     cursor = conn.cursor()
-    instruccion = "SELECT nombre FROM clientes WHERE nombre LIKE %s ORDER BY nombre ASC"
+    instruccion = "SELECT nombre FROM clientes WHERE nombre LIKE ? ORDER BY nombre ASC"
     termino = f"%{texto_busqueda}%"
     cursor.execute(instruccion, (termino,))
     resultados = cursor.fetchall()
@@ -501,7 +636,7 @@ def filtrar_clientes_por_nombre(texto_busqueda):
     return [cliente[0] for cliente in resultados]
 
 def obtener_nombres_clientes():
-    conn = conectar()
+    conn = sql.connect('negocio.db')
     cursor = conn.cursor()
     cursor.execute("SELECT nombre FROM clientes ORDER BY nombre ASC")
     resultados = cursor.fetchall()
@@ -511,13 +646,125 @@ def obtener_nombres_clientes():
     return lista_clientes
 
 def tipo_cliente(nombre_cliente):
-    conexion = conectar() 
+    conexion = sql.connect('negocio.db') 
     cursor = conexion.cursor()
     
-    query = "SELECT tipo FROM clientes WHERE nombre = %s"
+    query = "SELECT tipo FROM clientes WHERE nombre = ?"
     cursor.execute(query, (nombre_cliente,))
     resultado = cursor.fetchone()
     
     conexion.close()
     
     return resultado[0] if resultado else 'Natural'
+
+#proveedores----
+def obtener_proveedores():
+    conn = sql.connect('negocio.db')
+    cursor = conn.cursor()
+    
+    try:
+        cursor.execute("SELECT id, nombre, rif, contacto FROM proveedores;")
+        resultados = cursor.fetchall()
+        return resultados
+    except Exception as e:
+        print(f"Error al consultar proveedores: {str(e)}")
+        return []
+    finally:
+        conn.close()
+
+def registrar_proveedor_db(nombre, rif, contacto):
+    conn = sql.connect('negocio.db')
+    cursor = conn.cursor()
+    
+    query = "INSERT INTO proveedores (nombre, rif, contacto) VALUES (?, ?, ?);"
+    
+    try:
+        cursor.execute(query, (nombre, rif, contacto))
+        conn.commit()
+        return True, f"Proveedor '{nombre}' registrado con éxito."
+    except sql.IntegrityError:
+        return False, f"El RIF '{rif}' ya se encuentra registrado en el sistema."
+    except Exception as e:
+        return False, f"Error en la base de datos: {str(e)}"
+    finally:
+        conn.close()
+
+def agregar_producto_a_catalogo(id_proveedor, nombre_prod, costo, precio):
+    conn = sql.connect('negocio.db')
+    cursor = conn.cursor()
+    try:
+        cursor.execute("""
+            INSERT OR IGNORE INTO inventario (nombre, costo, precio, stock) 
+            VALUES (?, ?, ?, 0);
+        """, (nombre_prod, costo, precio))
+        
+        cursor.execute("SELECT id FROM inventario WHERE nombre = ?;", (nombre_prod,))
+        id_producto = cursor.fetchone()[0]
+        
+        cursor.execute("""
+            INSERT OR IGNORE INTO proveedor_catalogo (id_proveedor, id_producto) 
+            VALUES (?, ?);
+        """, (id_proveedor, id_producto))
+        
+        conn.commit()
+        return True, f"'{nombre_prod}' añadido al catálogo e inventario con éxito."
+    except Exception as e:
+        return False, f"Error al optimizar catálogo: {str(e)}"
+    finally:
+        conn.close()
+
+def obtener_catalogo_por_proveedor(id_proveedor):
+    """Trae solo los productos que este proveedor vende"""
+    conn = sql.connect('negocio.db')
+    cursor = conn.cursor()
+    try:
+        query = """
+            SELECT i.id, i.nombre, i.costo, i.precio, i.stock 
+            FROM inventario i
+            INNER JOIN proveedor_catalogo pc ON i.id = pc.id_producto
+            WHERE pc.id_proveedor = ?;
+        """
+        cursor.execute(query, (id_proveedor,))
+        return cursor.fetchall()
+    except Exception:
+        return []
+    finally:
+        conn.close()
+
+def obtener_compras_proveedor(id_proveedor):
+    conn = sql.connect('negocio.db')
+    cursor = conn.cursor()
+    try:
+        cursor.execute("SELECT id, fecha, total_pagado, detalles FROM compras_proveedor WHERE id_proveedor = ?;", (id_proveedor,))
+        return cursor.fetchall()
+    except Exception:
+        return []
+    finally:
+        conn.close()
+
+def obtener_pedidos_pendientes(id_proveedor):
+    conn = sql.connect('negocio.db')
+    cursor = conn.cursor()
+    try:
+        cursor.execute("SELECT id, producto, cantidad, monto_estimado, estado FROM pedidos_pendientes WHERE id_proveedor = ? AND estado = 'Pendiente';", (id_proveedor,))
+        return cursor.fetchall()
+    except Exception:
+        return []
+    finally:
+        conn.close()
+
+def recibir_pedido_pendiente_db(id_pedido):
+    """Cambia el estado de un pedido a Recibido para quitarlo de la lista"""
+    conn = sql.connect('negocio.db')
+    cursor = conn.cursor()
+    try:
+        cursor.execute("UPDATE pedidos_pendientes SET estado = 'Recibido' WHERE id = ?;", (id_pedido,))
+        conn.commit()
+        return True
+    except Exception:
+        return False
+    finally:
+        conn.close()
+
+
+
