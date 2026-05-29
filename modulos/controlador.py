@@ -39,11 +39,55 @@ def conectar():
         print(f"Error crítico al conectar a la base de datos: {e}")
         return None
 
+#Creción de base de datos
+
+def crear_base_de_datos():
+    try:
+        config = configparser.ConfigParser()
+        ruta_config = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'config.ini')
+        config.read(ruta_config)
+        conexion = mysql.connector.connect(
+            host=config['BASEDATOS']['IP_SERVIDOR'],
+            user=config['BASEDATOS']['Usuario'],
+            password=config["BASEDATOS"]['Clave']
+        )
+        cursor = conexion.cursor()
+        nombre_db = config["BASEDATOS"]['NombreDB']
+        cursor.execute(f"CREATE DATABASE IF NOT EXISTS {nombre_db}")
+        cursor.execute(f"USE {nombre_db}")
+
+        tablas = [
+            "CREATE TABLE IF NOT EXISTS empresa ( id INT AUTO_INCREMENT PRIMARY KEY, nombre VARCHAR(255) NOT NULL, direccion TEXT, telefono VARCHAR(50), email VARCHAR(100), descripcion TEXT )",
+            "CREATE TABLE IF NOT EXISTS clientes ( id INT AUTO_INCREMENT PRIMARY KEY, nombre VARCHAR(255) NOT NULL, cedula VARCHAR(50) NOT NULL, telefono VARCHAR(50) NOT NULL, tipo VARCHAR(50) NOT NULL DEFAULT 'Natural' )",
+            "CREATE TABLE IF NOT EXISTS usuarios ( id INT AUTO_INCREMENT PRIMARY KEY, username VARCHAR(100) NOT NULL UNIQUE, password VARCHAR(255) NOT NULL, nombre VARCHAR(255), cedula VARCHAR(50), telefono VARCHAR(50), correo VARCHAR(100), rol VARCHAR(50) NOT NULL DEFAULT 'Vendedor', sueldo DECIMAL(10,2) NOT NULL DEFAULT 0.0 )",
+            "CREATE TABLE IF NOT EXISTS ventas ( id INT AUTO_INCREMENT PRIMARY KEY, numero_factura VARCHAR(50) NOT NULL UNIQUE, cliente VARCHAR(255) NOT NULL, fecha DATETIME NOT NULL, total DECIMAL(12,2) NOT NULL )",
+            "CREATE TABLE IF NOT EXISTS detalles_ventas ( id INT AUTO_INCREMENT PRIMARY KEY, venta_id INT NOT NULL, producto VARCHAR(255) NOT NULL, precio_unitario DECIMAL(10,2) NOT NULL, cantidad INT NOT NULL, subtotal DECIMAL(12,2) NOT NULL, FOREIGN KEY (venta_id) REFERENCES ventas(id) ON DELETE CASCADE )",
+            "CREATE TABLE IF NOT EXISTS inventario ( id INT AUTO_INCREMENT PRIMARY KEY, nombre VARCHAR(255) NOT NULL UNIQUE, costo DECIMAL(10,2) NOT NULL, precio DECIMAL(10,2) NOT NULL, stock INT NOT NULL, perecedero TINYINT(1) NOT NULL DEFAULT 0, vencimiento DATE )",
+            "CREATE TABLE IF NOT EXISTS proveedores ( id INT AUTO_INCREMENT PRIMARY KEY, nombre VARCHAR(255) NOT NULL, rif VARCHAR(50) NOT NULL UNIQUE, contacto VARCHAR(255) NOT NULL )",
+            "CREATE TABLE IF NOT EXISTS proveedor_catalogo ( id_proveedor INT NOT NULL, id_producto INT NOT NULL, PRIMARY KEY(id_proveedor, id_producto), FOREIGN KEY(id_proveedor) REFERENCES proveedores(id) ON DELETE CASCADE, FOREIGN KEY(id_producto) REFERENCES inventario(id) ON DELETE CASCADE )",
+            "CREATE TABLE IF NOT EXISTS compras_proveedor ( id INT AUTO_INCREMENT PRIMARY KEY, id_proveedor INT NOT NULL, fecha DATETIME NOT NULL, total_pagado DECIMAL(12,2) NOT NULL, detalles TEXT, FOREIGN KEY(id_proveedor) REFERENCES proveedores(id) ON DELETE CASCADE )",
+            "CREATE TABLE IF NOT EXISTS pedidos_pendientes ( id INT AUTO_INCREMENT PRIMARY KEY, id_proveedor INT NOT NULL, producto VARCHAR(255) NOT NULL, cantidad INT NOT NULL, monto_estimado DECIMAL(12,2) NOT NULL, estado VARCHAR(50) NOT NULL DEFAULT 'Pendiente', FOREIGN KEY(id_proveedor) REFERENCES proveedores(id) ON DELETE CASCADE )"
+        ]
+        for tabla in tablas:
+            cursor.execute(tabla)
+
+        cursor.execute("SELECT COUNT(*) FROM usuarios")
+        if cursor.fetchone()[0] == 0:
+            cursor.execute("INSERT INTO usuarios (username, password, rol) VALUES ('admin', 'admin123', 'Administrador')") 
+        conexion.commit()
+        conexion.close()
+
+    except Exception as e:
+        print(f"Error en la instalación de la base de datos: {e}")
+
+crear_base_de_datos()
 #inventario -------
 
 def guardar_articulo(nombre,costo,precio,stock,perecedero,vencimiento):
     conn = conectar()
     cursor = conn.cursor()
+    if vencimiento== 'No Aplica'or not vencimiento:
+        vencimiento = None
     instruccion="INSERT INTO inventario (nombre, costo, precio, stock, perecedero, vencimiento) VALUES (%s,%s,%s,%s,%s,%s)"
     cursor.execute(instruccion, (nombre, costo, precio, stock, perecedero, vencimiento))
     conn.commit()
@@ -93,9 +137,8 @@ def obtener_productos_por_vencer():
             FROM inventario 
             WHERE perecedero = 1 
               AND vencimiento IS NOT NULL 
-              AND vencimiento != 'No Aplica'
               AND vencimiento <= DATE_ADD(CURDATE(), INTERVAL 7 DAY)
-              AND vencimiento >= DATE_ADD(CURDATE(), INTERVAL 7 DAY);
+              AND vencimiento >= CURDATE();
         """
         cursor.execute(query)
         return cursor.fetchall()
@@ -108,6 +151,8 @@ def obtener_productos_por_vencer():
 def actualizar_articulo(id, nombre, costo, precio, stock, perecedero,vencimiento):
     conn = conectar()
     cursor = conn.cursor()
+    if vencimiento == 'No Aplica' or not vencimiento:
+        vencimiento = None
     instruccion = "UPDATE inventario SET nombre = %s, costo = %s, precio = %s, stock = %s, perecedero = %s, vencimiento = %s WHERE id = %s"
     cursor.execute(instruccion, (nombre, costo, precio, stock, perecedero,vencimiento, id))
     conn.commit()
@@ -198,7 +243,7 @@ def registrar_usuario(username, password, nombre, cedula, telefono, correo, rol,
     cursor = conexion.cursor()
     
     intruccion= """
-    INSERT INTO "usuarios" ("username", "password", "nombre", "cedula", "telefono", "correo", "rol", "sueldo")
+    INSERT INTO usuarios (username, password, nombre, cedula, telefono, correo, rol, sueldo)
     VALUES (%s, %s, %s, %s, %s, %s, %s, %s);
     """
     
@@ -266,7 +311,8 @@ def guardar_empresa(nombre, direccion, telefono, email, descripcion):
     conn = conectar()
     cursor = conn.cursor()
     instruccion = """INSERT INTO empresa (id, nombre, direccion, telefono, email, descripcion)
-                     VALUES (1, %s, %s, %s, %s, %s) ON DUPLICATE KEY UPDATE(nombre), direccion=VALUES(direccion);"""
+                     VALUES (1, %s, %s, %s, %s, %s) ON DUPLICATE KEY UPDATE nombre=VALUES(nombre), direccion=VALUES(direccion),
+                     telefono=VALUES(telefono), email=VALUES(email), descripcion=VALUES(descripcion);"""
     cursor.execute(instruccion, (nombre, direccion, telefono, email, descripcion))
     conn.commit()
     conn.close()
@@ -461,7 +507,9 @@ def obtener_ventas_filtradas(modo):
     elif modo == "Quincenal":
         condicion = " WHERE fecha >= DATE_SUB(CURDATE(), INTERVAL 15 DAY)"
     elif modo == "Mensual":
-        condicion = " WHERE fecha >= DATE_SUB(CURDATE, INTERVAL 30 DAY)"
+        condicion = " WHERE fecha >= DATE_SUB(CURDATE(), INTERVAL 30 DAY)"
+    else:
+        condicion = ""
 
     query_final = query + condicion + " ORDER BY id DESC"
     cursor.execute(query_final)
