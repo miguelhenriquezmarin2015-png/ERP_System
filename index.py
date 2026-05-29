@@ -6,7 +6,12 @@ from tkinter import messagebox, simpledialog
 import urllib.request
 import threading
 
-ruta_config=os.path.join(os.path.dirname(__file__), "config.ini")
+if getattr(sys, 'frozen', False):
+    directorio_base = os.path.dirname(sys.executable)
+else:
+    directorio_base = os.path.dirname(__file__)
+
+ruta_config = os.path.join(directorio_base, 'config.ini')
 #Asistente de primer inicio 
 def primer_inicio():
     root = tk.Tk()

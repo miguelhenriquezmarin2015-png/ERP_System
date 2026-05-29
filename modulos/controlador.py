@@ -7,6 +7,7 @@ from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, Tabl
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib import colors
 import os
+import sys
 
 """al terminar el programa cambiar de base de datos mysql por ende cambiar: sql.connect('negocio.db') por conectar() 
 y cambiar los ? por %s en las consultas"""
@@ -21,10 +22,17 @@ y cambiar los ? por %s en las consultas"""
      #   password="",             # Contraseña por defecto (vacía en XAMPP)
       #  database="negocio_db"   
     #)
+def obtener_ruta_config():
+    if getattr(sys, 'frozen', False):
+        directorio_base = os.path.dirname(sys.executable)
+    else:    
+        directorio_base = os.path.dirname(os.path.dirname(__file__))
+    return os.path.join(directorio_base, 'config.ini')
+
 def conectar():
     try:
         config = configparser.ConfigParser()
-        ruta_config = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'config.ini')
+        ruta_config = obtener_ruta_config()
         config.read(ruta_config)
 
         conexion = mysql.connector.connect(
@@ -44,7 +52,7 @@ def conectar():
 def crear_base_de_datos():
     try:
         config = configparser.ConfigParser()
-        ruta_config = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'config.ini')
+        ruta_config = obtener_ruta_config()
         config.read(ruta_config)
         conexion = mysql.connector.connect(
             host=config['BASEDATOS']['IP_SERVIDOR'],
