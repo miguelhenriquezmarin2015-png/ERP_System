@@ -80,7 +80,7 @@ def crear_base_de_datos():
     except Exception as e:
         print(f"Error en la instalación de la base de datos: {e}")
 
-crear_base_de_datos()
+
 #inventario -------
 
 def guardar_articulo(nombre,costo,precio,stock,perecedero,vencimiento):

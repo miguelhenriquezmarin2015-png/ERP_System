@@ -9,7 +9,7 @@ import threading
 ruta_config=os.path.join(os.path.dirname(__file__), "config.ini")
 #Asistente de primer inicio 
 def primer_inicio():
-    root = tk.TK
+    root = tk.Tk()
     root.title("Configuración Inicial del ERP")
     root.geometry("450x280")
     root.eval('tk::PlaceWindow . center')
@@ -38,8 +38,8 @@ def primer_inicio():
             guardar_configuracion(ip.strip())
             messagebox.showinfo("Listo", f"Equipo configurado como Afiliado a {ip}.\nConectando...")
             root.destroy()
-    tk.Button(root, text="1. Servidor Principal", width=25, bg="#4CAF50", fg="white", font=("Arial", 10, "bold"), command=set_servidor).pack(pady=8)
-    tk.Button(root, text="2. Este es un Equipo Cliente (Caja)", width=35, bg="#2196F3", fg="white", font=("Arial", 10, "bold"), command=set_cliente).pack(pady=8)
+    tk.Button(root, text="1. Servidor Principal", width=35, bg="#4CAF50", fg="white", font=("Arial", 10, "bold"), command=set_servidor).pack(pady=8)
+    tk.Button(root, text="2. Equipo Afiliado", width=35, bg="#2196F3", fg="white", font=("Arial", 10, "bold"), command=set_cliente).pack(pady=8)
 
     root.mainloop()
 
