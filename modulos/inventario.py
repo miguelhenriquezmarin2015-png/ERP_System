@@ -1,7 +1,7 @@
 from tkinter import *
 import tkinter as tk
 from tkinter import ttk,messagebox,filedialog
-import modulos.controlador as ctrl
+import especialidades.controlador as ctrl
 
 class Inventario(tk.Frame):
     def __init__(self, padre,controller):
@@ -65,7 +65,6 @@ class Inventario(tk.Frame):
             self.cargar_articulos()
             self.bt3.config(text="VER BAJO STOCK", bg="#F44336")            
             self.filtro_bajo_stock_activo = False
-
 
     def buscar_articulo(self, event=None):
         if self.filtro_bajo_stock_activo:

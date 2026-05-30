@@ -87,7 +87,7 @@ if __name__=="__main__":
         primer_inicio()
     if not os.path.exists(ruta_config):
         sys.exit()
-    from modulos.controlador import crear_base_de_datos
+    from especialidades.controlador import crear_base_de_datos
     from especialidades.manager import Manager
     try:
         crear_base_de_datos()

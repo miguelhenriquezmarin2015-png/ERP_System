@@ -1,7 +1,7 @@
 from tkinter import *
 import tkinter as tk
 from tkinter import ttk,messagebox
-import modulos.controlador as ctrl 
+import especialidades.controlador as ctrl 
 import threading
 
 class Clientes(tk.Frame):
@@ -74,7 +74,6 @@ class Clientes(tk.Frame):
             self.entry_tipo.current(1)
             
         self.id_cliente_seleccionado = datos_cliente[0] 
-
 
     def cargar_datos_clientes(self):
         for fila in self.tabla_clientes.get_children():

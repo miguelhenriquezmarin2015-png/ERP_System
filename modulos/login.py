@@ -4,7 +4,7 @@ from PIL import Image, ImageTk
 import sys 
 import os
 from especialidades.container import Container
-from modulos.controlador import validacion
+import especialidades.controlador as ctrl
 
 class PantallaBase(tk.Frame):
     def __init__(self, padre, controller):
@@ -73,23 +73,22 @@ class Login(PantallaBase):
         # Botones
         tk.Button(frame_login, text="INICIAR SESIÓN",command=self.login, bg="#2196F3", fg="white", font="arial 12 bold", bd=0, cursor="hand2").place(x=70, y=340, width=260, height=45)
         
-        # Este botón ahora nos lleva a la clase Registro
-        """tk.Button(frame_login, text="REGISTRARSE", bg="#4CAF50", fg="white", font="arial 12 bold", bd=0, cursor="hand2",
-                  command=lambda: self.controller.show_frame(Registro)).place(x=70, y=400, width=260, height=45)"""
-        
     def login(self):
-        
         self.user = self.ent_u.get().strip()
         self.pas = self.ent_p.get().strip()
-    
+
         if not self.user or not self.pas:
             tk.messagebox.showwarning("Campos vacíos", "Por favor, llene todos los campos.")
             return
-        
-        resultado = self.validacion(self.user, self.pas)
-    
+
+        resultado = ctrl.validacion(self.user, self.pas)
+
         if resultado:
-            self.controller.show_frame(Container) 
+            instancia_container = self.controller.show_frame(Container)
+            
+            if instancia_container:
+                instancia_container.aplicar_permisos_rol(resultado)
+                
+            self.limpiar_campos(self.ent_u, self.ent_p)
         else:
             tk.messagebox.showerror("Error", "Usuario o contraseña incorrectos")
-        self.limpiar_campos(self.ent_u, self.ent_p)
