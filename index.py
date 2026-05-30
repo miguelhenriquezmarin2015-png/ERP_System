@@ -56,6 +56,8 @@ def descargar_laragon(parent):
 
     lbl_progreso = tk.Label(top, text="Iniciando descarga de Laragon (170MB)...", font=("Helvetica", 10))
     lbl_progreso.pack(pady=30)
+
+    threading.Tread(target=descargar, daemon=True).start()
     
     def reporthook(bloque_num, tamano_bloque, tamano_total):
         if tamano_total > 0:

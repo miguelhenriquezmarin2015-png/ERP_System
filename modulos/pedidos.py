@@ -30,7 +30,7 @@ class Pedidos(tk.Frame):
             self.entry_proveedor['values'] = proveedores_filtrados
 
     def widgets(self):
-        """labelframe=LabelFrame(self,text="Pedidos",font="arial 20 bold",bg="#C6D9E3")
+        labelframe=LabelFrame(self,text="Pedidos",font="arial 20 bold",bg="#C6D9E3")
         labelframe.place(x=20,y=20,width=400,height=200)
 
         lavel_proveedor=Label(labelframe,text="Proveedor:",font="arial 14 bold",bg="#C6D9E3")
@@ -147,4 +147,3 @@ class Pedidos(tk.Frame):
                 "nombre": nombre,
                 "costo": costo
             }
-"""
