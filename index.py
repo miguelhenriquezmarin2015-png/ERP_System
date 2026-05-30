@@ -57,8 +57,6 @@ def descargar_laragon(parent):
     lbl_progreso = tk.Label(top, text="Iniciando descarga de Laragon (170MB)...", font=("Helvetica", 10))
     lbl_progreso.pack(pady=30)
 
-    threading.Tread(target=descargar, daemon=True).start()
-    
     def reporthook(bloque_num, tamano_bloque, tamano_total):
         if tamano_total > 0:
             porcentaje = min(int(bloque_num * tamano_bloque *100 / tamano_total), 100)
@@ -81,6 +79,7 @@ def descargar_laragon(parent):
     def error_descarga(e):
         messagebox.showerror("Error", f"No se pudo descargar Laragon:\n{e}\n\nPor favor, descarga e instala Laragon manualmente desde:\nhttps://laragon.org/download/index.html")
         sys.exit()
+        threading.Thread(target=descargar, daemon=True).start()
 
 
 

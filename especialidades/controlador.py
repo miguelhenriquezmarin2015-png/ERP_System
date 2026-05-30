@@ -721,13 +721,13 @@ def recibir_pedido_pendiente_db(id_pedido):
         conn.close()
 
 def actualizar_articulo_catalogo(id_producto, nombre, costo, precio):
-    conn = sql.connect('negocio.db') 
+    conn = conectar() 
     cursor = conn.cursor()
     try:
         cursor.execute("""
             UPDATE inventario 
-            SET nombre = ?, costo = ?, precio = ? 
-            WHERE id = ?
+            SET nombre = %s, costo = %s, precio = %s 
+            WHERE id = %s
         """, (nombre, costo, precio, id_producto))
         conn.commit()
         return True, "Artículo actualizado con éxito."
