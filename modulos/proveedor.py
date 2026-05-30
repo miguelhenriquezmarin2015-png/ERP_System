@@ -76,7 +76,7 @@ class Proveedor(tk.Frame):
             )
             lbl.grid(row=0, column=col_idx, sticky="nsew")
 
-        lista_proveedores = ctrl.obtener_proveedores()
+        lista_proveedores = ctrl.obtener_nombres_proveedores()
 
         for row_idx, prov in enumerate(lista_proveedores, start=1):
             id_prov, nombre, rif, contacto = prov

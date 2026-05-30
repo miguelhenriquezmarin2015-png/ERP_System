@@ -612,7 +612,7 @@ def tipo_cliente(nombre_cliente):
     return resultado[0] if resultado else 'Natural'
 
 #proveedores----
-def obtener_proveedores():
+def obtener_nombres_proveedores():
     conn = conectar()
     cursor = conn.cursor()
     

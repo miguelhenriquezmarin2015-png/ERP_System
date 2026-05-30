@@ -79,7 +79,7 @@ def descargar_laragon(parent):
     def error_descarga(e):
         messagebox.showerror("Error", f"No se pudo descargar Laragon:\n{e}\n\nPor favor, descarga e instala Laragon manualmente desde:\nhttps://laragon.org/download/index.html")
         sys.exit()
-        threading.Thread(target=descargar, daemon=True).start()
+    threading.Thread(target=descargar, daemon=True).start()
 
 
 

@@ -40,6 +40,8 @@ class Pedidos(tk.Frame):
         self.entry_proveedor.place(x=110,y=10,width=200,height=40)
         self.cargar_proveedores()
         self.entry_proveedor.bind("<<KeyRelease>>", self.filtrar_proveedores)
+        self.frame_articulos_scroll= tk.Frame(self, bg="#FFFFFF")
+        self.frame_articulos_scroll.place(x=20, y=250, width=800, height=350)
 
     def procesar_y_exportar_pedido(self):
         productos_pedidos = []
