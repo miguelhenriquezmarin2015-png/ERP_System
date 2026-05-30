@@ -684,6 +684,36 @@ def obtener_proveedores():
     finally:
         conn.close()
 
+def obtener_nombres_proveedores():
+    conn = sql.connect('negocio.db')
+    cursor = conn.cursor()
+    
+    try:
+        cursor.execute("SELECT nombre FROM proveedores ORDER BY nombre ASC;")
+        resultados = cursor.fetchall()
+        return [proveedor[0] for proveedor in resultados]
+    except Exception as e:
+        print(f"Error al obtener nombres de proveedores: {str(e)}")
+        return []
+    finally:
+        conn.close()
+
+def filtrar_proveedores(nom):
+    conn = sql.connect('negocio.db')
+    cursor = conn.cursor()
+    
+    try:
+        instruccion = "SELECT nombre FROM proveedores WHERE nombre LIKE ? ORDER BY nombre ASC"
+        termino = f"%{nom}%"
+        cursor.execute(instruccion, (termino,))
+        resultados = cursor.fetchall()
+        return [proveedor[0] for proveedor in resultados]
+    except Exception as e:
+        print(f"Error al filtrar proveedores: {str(e)}")
+        return []
+    finally:
+        conn.close()
+
 def registrar_proveedor_db(nombre, rif, contacto):
     conn = sql.connect('negocio.db')
     cursor = conn.cursor()
@@ -778,3 +808,18 @@ def recibir_pedido_pendiente_db(id_pedido):
     finally:
         conn.close()
 
+def actualizar_articulo_catalogo(id_producto, nombre, costo, precio):
+    conn = sql.connect('negocio.db') 
+    cursor = conn.cursor()
+    try:
+        cursor.execute("""
+            UPDATE inventario 
+            SET nombre = ?, costo = ?, precio = ? 
+            WHERE id = ?
+        """, (nombre, costo, precio, id_producto))
+        conn.commit()
+        return True, "Artículo actualizado con éxito."
+    except Exception as e:
+        return False, f"Error al actualizar en la base de datos: {str(e)}"
+    finally:
+        conn.close()

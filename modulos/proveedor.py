@@ -62,7 +62,6 @@ class Proveedor(tk.Frame):
         for widget in self.scrollbar_frame.winfo_children():
             widget.destroy()
 
-        # 3. Encabezados de la Tabla
         headers = ["ID", "Nombre de Empresa", "RIF", "Contacto / Teléfono", "Perfil / Opciones"]
         for col_idx, text in enumerate(headers):
             lbl = tk.Label(
@@ -149,7 +148,14 @@ class Proveedor(tk.Frame):
             messagebox.showerror("Error", mensaje)
 
     def ver_catalogo_articulos(self, datos_proveedor):
-        id_prov, nombre_prov, rif, contacto = datos_proveedor
+        try:
+            id_prov = datos_proveedor[0]
+            nombre_prov = datos_proveedor[1]
+        except (TypeError, IndexError):
+            id_prov = datos_proveedor
+            nombre_prov = "Proveedor"
+
+        control_edicion = {"id_articulo": None}
 
         top_cat = tk.Toplevel(self)
         top_cat.title(f"Catálogo Autónomo - {nombre_prov}")
@@ -189,21 +195,45 @@ class Proveedor(tk.Frame):
             for w in frame_grid_sub.winfo_children():
                 w.destroy()
 
-            headers_cat = ["ID", "Producto / Artículo", "Costo", "P. Venta", "Stock"]
+            headers_cat = ["ID", "Producto / Artículo", "Costo", "P. Venta", "Stock", "Acción"]
             for c_idx, text in enumerate(headers_cat):
-                tk.Label(frame_grid_sub, text=text, font=("arial", 12, "bold"), bg="#9FB8C7", relief="groove", padx=5, pady=5).grid(row=0, column=c_idx, sticky="nsew")
+                tk.Label(
+                    frame_grid_sub, text=text, font=("arial", 12, "bold"), 
+                    bg="#9FB8C7", relief="groove", padx=5, pady=5
+                ).grid(row=0, column=c_idx, sticky="nsew")
 
             productos = ctrl.obtener_catalogo_por_proveedor(id_prov)
             for r_idx, prod in enumerate(productos, start=1):
                 id_p, n_p, c_p, p_p, s_p = prod
                 c_fila = "#E1EBF0" if r_idx % 2 == 0 else "#F4F4F4"
-                
-                valores_p = [id_p, n_p, f"${c_p:,.2f}", f"${p_p:,.2f}", s_p]
-                for c_idx, val in enumerate(valores_p):
-                    tk.Label(frame_grid_sub, text=val, font=("arial", 11), bg=c_fila, relief="groove", anchor="w" if c_idx==1 else "center", padx=5, pady=4).grid(row=r_idx, column=c_idx, sticky="nsew")
 
-            for i in range(5):
-                frame_grid_sub.grid_columnconfigure(i, weight=1 if i!=1 else 2)
+                valores_p = [id_p, n_p, f"${c_p:.2f}", f"${p_p:.2f}", s_p]
+                for c_idx, val in enumerate(valores_p):
+                    anchor_val = "w" if c_idx == 1 else "center"
+                    tk.Label(
+                        frame_grid_sub, text=val, font=("arial", 11), bg=c_fila, 
+                        relief="groove", anchor=anchor_val
+                    ).grid(row=r_idx, column=c_idx, sticky="nsew")
+
+                def preparar_edicion(ip=id_p, nom=n_p, cos=c_p, pre=p_p):
+                    control_edicion["id_articulo"] = ip
+                    ent_nom.delete(0, tk.END)
+                    ent_nom.insert(0, nom)
+                    ent_cos.delete(0, tk.END)
+                    ent_cos.insert(0, str(cos))
+                    ent_pre.delete(0, tk.END)
+                    ent_pre.insert(0, str(pre))
+                    btn_guardar.config(text="Actualizar Artículo", bg="#FF9800")
+
+                btn_edit = tk.Button(
+                    frame_grid_sub, text="Modificar", bg=c_fila, font=("arial", 10),
+                    bd=1, relief="groove", cursor="hand2", command=preparar_edicion
+                )
+                btn_edit.grid(row=r_idx, column=5, sticky="nsew", padx=2, pady=1)
+
+            # Configurar anchos de columna (ahora son 6 columnas: de la 0 a la 5)
+            for i in range(6):
+                frame_grid_sub.grid_columnconfigure(i, weight=1 if i != 1 else 2)
 
         def ejecutar_guardado_articulo():
             n = ent_nom.get().strip()
@@ -211,8 +241,9 @@ class Proveedor(tk.Frame):
             p_str = ent_pre.get().strip()
 
             if not n or not c_str or not p_str:
-                messagebox.showerror("Error", "Completa los datos del nuevo artículo.", parent=top_cat)
+                messagebox.showerror("Error", "Completa los datos del artículo.", parent=top_cat)
                 return
+
             try:
                 c = float(c_str)
                 p = float(p_str)
@@ -220,17 +251,30 @@ class Proveedor(tk.Frame):
                 messagebox.showerror("Error", "Costo y precio deben ser valores numéricos.", parent=top_cat)
                 return
 
-            exito, msg = ctrl.agregar_producto_a_catalogo(id_prov, n, c, p)
+            if control_edicion["id_articulo"] is None:
+                exito, msg = ctrl.agregar_producto_a_catalogo(id_prov, n, c, p)
+            else:
+                exito, msg = ctrl.actualizar_articulo_catalogo(control_edicion["id_articulo"], n, c, p)
+
             if exito:
                 messagebox.showinfo("Éxito", msg, parent=top_cat)
                 ent_nom.delete(0, tk.END)
                 ent_cos.delete(0, tk.END)
                 ent_pre.delete(0, tk.END)
-                refrescar_subtabla() 
+                
+                if control_edicion["id_articulo"] is not None:
+                    control_edicion["id_articulo"] = None
+                    btn_guardar.config(text="Guardar en Catálogo", bg="#2196F3")
+                    
+                refrescar_subtabla()
             else:
                 messagebox.showerror("Error", msg, parent=top_cat)
 
-        tk.Button(frame_add, text="Guardar en Catálogo", bg="#2196F3", fg="white", font="arial 10 bold", command=ejecutar_guardado_articulo).place(x=10, y=230, width=230, height=35)
+        btn_guardar = tk.Button(
+            frame_add, text="Guardar en Catálogo", bg="#2196F3", fg="white", 
+            font="arial 10 bold", command=ejecutar_guardado_articulo
+        )
+        btn_guardar.place(x=10, y=220, width=230, height=35)
 
         refrescar_subtabla()
 
@@ -249,7 +293,7 @@ class Proveedor(tk.Frame):
             tk.Label(frame_grid, text=text, font=("arial", 12, "bold"), bg="#9FB8C7", relief="groove", padx=5, pady=5).grid(row=0, column=col_idx, sticky="nsew")
 
         compras = ctrl.obtener_compras_proveedor(id_proveedor)
-        
+            
         if not compras:
             tk.Label(frame_grid, text="No se registran compras procesadas con este proveedor.", font=("arial", 12, "italic"), bg="#C6D9E3").grid(row=1, column=0, columnspan=4, pady=20)
             return
@@ -264,7 +308,7 @@ class Proveedor(tk.Frame):
 
         for i in range(4):
             frame_grid.grid_columnconfigure(i, weight=1 if i!=3 else 2)
-        
+            
     def ver_pedidos_pendientes(self, id_proveedor):
         top_pedidos = tk.Toplevel(self)
         top_pedidos.title("Órdenes y Pedidos Pendientes")

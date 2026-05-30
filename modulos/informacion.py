@@ -218,7 +218,10 @@ class Informacion(tk.Frame):
 
         headers = ["ID", "Nombre Completo", "Cédula", "Rol", "Sueldo", "Acciones"]
         for col_idx, text in enumerate(headers):
-            lbl_header = tk.Label(self.scrollbar_frame,text=text,font="arial 16 bold",bg="#9FB8C7",fg="black",relief="groove",padx=10,pady=5)
+            lbl_header = tk.Label(
+                self.scrollbar_frame, text=text, font="arial 16 bold",
+                bg="#9FB8C7", fg="black", relief="groove", pady=5
+            )
             lbl_header.grid(row=0, column=col_idx, sticky="nsew")
 
         if datos is not None:
@@ -228,18 +231,16 @@ class Informacion(tk.Frame):
 
         for row_idx, emp in enumerate(lista_empleados, start=1):
             id_emp, username, nombre, cedula, telefono, correo, rol, sueldo = emp
-                
+
             if hasattr(self, 'filtro_rol_actual') and self.filtro_rol_actual != "Todos":
                 if rol.strip().lower() != self.filtro_rol_actual.strip().lower():
                     continue
 
             color_fila = "#E1EBF0" if row_idx % 2 == 0 else "#F4F4F4"
-
             valores_fila = [id_emp, nombre, cedula, rol, sueldo]
 
             for col_idx, valor in enumerate(valores_fila):
-                
-                if col_idx == 4: 
+                if col_idx == 4:
                     try:
                         sueldo_numero = float(valor)
                         texto_celda = f"${sueldo_numero:,.2f}"
@@ -248,54 +249,58 @@ class Informacion(tk.Frame):
                 else:
                     texto_celda = valor
 
+                if col_idx in [0, 2, 3]:
+                    anchor_val = "center"
+                elif col_idx == 1:
+                    anchor_val = "w"
+                else:
+                    anchor_val = "e"
+
                 lbl_dato = tk.Label(
                     self.scrollbar_frame,
                     text=texto_celda,
                     font=("arial", 16),
                     bg=color_fila,
-                    anchor="center" if col_idx in [0, 2, 3] else ("w" if col_idx == 1 else "e"),
+                    anchor=anchor_val,
                     padx=10,
                     pady=5
                 )
                 lbl_dato.grid(row=row_idx, column=col_idx, sticky="nsew")
 
-                frame_botones = tk.Frame(self.scrollbar_frame, bg=color_fila)
-                frame_botones.grid(row=row_idx, column=5, sticky="nsew", padx=1, pady=1)
-            
+            frame_botones = tk.Frame(self.scrollbar_frame, bg=color_fila)
+            frame_botones.grid(row=row_idx, column=5, sticky="nsew", padx=1, pady=1)
+
             if id_emp != 1:
                 frame_botones.columnconfigure(0, weight=1)
-                frame_botones.columnconfigure(1, weight=1)
-
-                btn_mod = tk.Button(
-                    frame_botones, 
-                    text="Editar", 
-                    bg="#F44336", 
-                    fg="white", 
-                    font=("arial", 12, "bold"), 
-                    bd=0, 
-                    width=8,
-                    command=lambda e=emp: self.modificar_empleado_ventana(e)
+                
+                btn_opciones = tk.Button(
+                    frame_botones,
+                    text="Opciones ▾",
+                    bg="#4A5568", fg="white", 
+                    font=("arial", 12, "bold"), bd=0,
+                    width=10, cursor="hand2"
                 )
-                btn_mod.grid(row=0, column=0, padx=5, pady=5)
+                btn_opciones.grid(row=0, column=0, padx=5, pady=5, sticky="nsew")
 
-                btn_elim = tk.Button(
-                    frame_botones, 
-                    text="Eliminar", 
-                    bg="#BA48D6", 
-                    fg="white", 
-                    font=("arial", 12, "bold"), 
-                    bd=0, 
-                    width=8,
-                    command=lambda id_b=id_emp, nom_b=nombre: self.eliminar_empleado_accion(id_b, nom_b)
-                )
-                btn_elim.grid(row=0, column=1, padx=5, pady=5)
+                def desplegar_menu_empleado(b=btn_opciones, e=emp, id_b=id_emp, nom_b=nombre):
+                    menu_popup = tk.Menu(b, tearoff=0, font=("arial", 11), bg="white", fg="black", activebackground="#2196F3")
+                    
+                    menu_popup.add_command(label="✏️ Editar", command=lambda: self.modificar_empleado_ventana(e))
+                    menu_popup.add_command(label="🗑️ Eliminar", command=lambda: self.eliminar_empleado_accion(id_b, nom_b))
+                    
+                    # Posicionar el menú exactamente debajo del botón de opciones
+                    x = b.winfo_rootx()
+                    y = b.winfo_rooty() + b.winfo_height()
+                    menu_popup.post(x, y)
 
-        self.scrollbar_frame.grid_columnconfigure(0, weight=1) # ID
-        self.scrollbar_frame.grid_columnconfigure(1, weight=3) # Nombre Completo
-        self.scrollbar_frame.grid_columnconfigure(2, weight=2) # Cédula
-        self.scrollbar_frame.grid_columnconfigure(3, weight=2) # Rol
-        self.scrollbar_frame.grid_columnconfigure(4, weight=2) # Sueldo
-        self.scrollbar_frame.grid_columnconfigure(5, weight=2) # Acciones
+                btn_opciones.config(command=desplegar_menu_empleado)
+
+        self.scrollbar_frame.grid_columnconfigure(0, weight=1)
+        self.scrollbar_frame.grid_columnconfigure(1, weight=3)
+        self.scrollbar_frame.grid_columnconfigure(2, weight=2)  
+        self.scrollbar_frame.grid_columnconfigure(3, weight=2)  
+        self.scrollbar_frame.grid_columnconfigure(4, weight=2) 
+        self.scrollbar_frame.grid_columnconfigure(5, weight=2) 
 
     def filtrar_por_rol(self):
         roles = ["Todos", "Vendedor", "Administrador", "Tesorero", "Encargado"]
