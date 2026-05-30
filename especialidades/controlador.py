@@ -438,7 +438,7 @@ def exportar_ventas_pdf(modo):
     elementos.append(tabla_pdf)
 
     doc.build(elementos)
-    
+    #hola que hace
     return ruta_destino_completa
 
 def guardar_venta_completa(numero_factura, cliente, lista_productos, total):
