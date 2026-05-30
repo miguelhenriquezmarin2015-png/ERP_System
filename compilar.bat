@@ -1,1 +1,1 @@
-pyinstaller index.spec
+python -m Pyinstaller index.spec
