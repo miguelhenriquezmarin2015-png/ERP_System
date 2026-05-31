@@ -721,7 +721,7 @@ def recibir_pedido_pendiente_db(id_pedido):
         conn.close()
 
 def actualizar_articulo_catalogo(id_producto, nombre, costo, precio):
-    conn = sql.connect('negocio.db') 
+    conn = conectar()
     cursor = conn.cursor()
     try:
         cursor.execute("""
