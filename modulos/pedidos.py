@@ -40,8 +40,48 @@ class Pedidos(tk.Frame):
         self.entry_proveedor.place(x=110,y=10,width=200,height=40)
         self.cargar_proveedores()
         self.entry_proveedor.bind("<<KeyRelease>>", self.filtrar_proveedores)
-        self.frame_articulos_scroll= tk.Frame(self, bg="#FFFFFF")
-        self.frame_articulos_scroll.place(x=20, y=250, width=800, height=350)
+        
+        self.btn_confirmar = tk.Button(
+            labelframe, text="Confirmar y Generar Orden",
+            font="arial 12 bold", bg="#4CAF50", fg="white", cursor="hand2",
+            command=self.procesar_y_exportar_pedido
+        )
+        self.btn_confirmar.place(x=520, y=15, width=250, height=40)
+        
+        self.canvas_frame = tk.Frame(self, bg="#FFFFFF", bd=2, relief="groove")
+        self.canvas_frame.place(x=20, y=140, width=800, height=460)
+        
+        self.canvas=tk.Canvas(self.canvas_frame, bg="#FFFFFF")
+        self.scrollbar = tk.Scrollbar(self.canvas_frame, orient="vertical", command=self.canvas.yview)
+        self.frame_articulos_scroll= tk.Frame(self.canvas, bg="#FFFFFF")
+        
+        self.frame_articulos_scroll.bind(
+            "<Configure>",
+            lambda e: self.canvas.configure(scrollregion=self.canvas.bbox("all"))
+        )
+        self.canvas.create_window((0,0), windows=self.frame_articulos_scroll, anchor="nw", width=770)
+        self.canvas.configure(yscrollcommand=self.scrollbar.set)
+
+        self.canvas.pack(side="left", fill="booth", expand=True)
+        self.scrollbar.pack(side="right", fill="y")
+    
+    def cargar_catalogo_pedido(self, event=None):
+        proveedor_seleccionado = self.entry_proveedor.get()
+        if not proveedor_seleccionado or "-" not in proveedor_seleccionado:
+            return
+
+        id_proveedor = proveedor_seleccionado.split("-")[0].strip() 
+        
+        for widget in self.frame_articulos_scroll.winfo_children():
+            widget.destroy()
+        
+        fila_header = tk.Frame(self.frame_articulos_scroll, bg="#9FB8C7", pady=5)
+        fila_header.pack(fill="x", padx=10, pady=5)
+        tk.Label(fila_header, text="Producto / Artículo", font=("arial", 12, "bold"), bg="#9FB8C7", width=30, anchor="w").pack(side="left", padx=5)
+        tk.Label(fila_header, text="Costo ($)", font=("arial", 12, "bold"), bg="#9FB8C7", width=10).pack(side="left")
+        tk.Label(fila_header, text="Stock Actual", font=("arial", 12, "bold"), bg="#9FB8C7", width=10).pack(side="left")
+        tk.Label(fila_header, text="Cantidad a Pedir", font=("arial", 12, "bold"), bg="#9FB8C7", width=15).pack(side="right", padx=10)
+    
 
     def procesar_y_exportar_pedido(self):
         productos_pedidos = []

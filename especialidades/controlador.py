@@ -735,3 +735,54 @@ def actualizar_articulo_catalogo(id_producto, nombre, costo, precio):
         return False, f"Error al actualizar en la base de datos: {str(e)}"
     finally:
         conn.close()
+
+def guardar_pedido_bd(id_proveedor, lista_productos):
+    conn = conectar()
+    cursor = conn.cursor
+    try:
+        query = "INSERT INTO pedidos_pendientes (id_proveedor, producto, cantidad, monto_estimado, estado) VALUES (%s, %s, %s, %s, 'Pendiente')"
+        for prod in lista_productos:
+            total_estimado = float(prod['cantidad']) * float(prod['costo'])
+            cursor.execute(query, (id_proveedor, prod['nombre'], prod['cantidad'], total_estimado))
+        conn.commit()
+        return True, "El pedido fue registrado con éxito."
+    except Exception as e:
+        return False, f"Error al guardar el pedido: {str(e)}"
+    finally:
+        conn.close()
+
+def generar_orden_pedido(nombre_proveedor, lista_productos, total_general):
+    carpeta_descargas = os.path.join(os.path.expanduser("~"), "Downloads")
+    fecha_actual= datetime.now().strftime("%Y%m%d_%H%M%S")
+    nombre_archivo = f"Orden_Pedido_{nombre_proveedor.replace('','_')}_{fecha_actual}.pdf"
+    ruta_destino = os.path.join(carpeta_descargas, nombre_archivo)
+
+    documento= SimpleDocTemplate(ruta_destino, pagesize=letter)
+    elementos = []
+    estilos =getSampleStyleSheet()
+
+    titulo = ParagraphStyle('Titulo', parent=estilos['Heading1'], fontSize=20, textColor=colors.HexColor("#2196F3"))
+    elementos.append(Paragraph(f"ORDEN DE COMPRA", titulo))
+    elementos.append(Paragraph(f"<b>Proveedor:</b> {nombre_proveedor} | <b>Fecha:</b> {datetime.now().strftime('%d/%m/%Y %H:%M')}", estilos['Normal']))
+    elementos.append(Spacer(1, 20))
+
+    tabla_datos = [["Producto / Artículo", "Cantidad", "Costo Unitario","Subtotal"]]
+    for p in lista_productos:
+        subtotal = p['cantidad']* float(p['costo'])
+        tabla_datos.append([p['nombre'], str(p['cantidad']), f"${p['costo']:.2f}", f"${subtotal:.2f}"])
+    
+    tabla_datos.append(["","", "TOTAL:", f"${total_general:.2f}"])
+
+    tabla_pdf= Table(tabla_datos, colWidths=[250, 80, 100, 100])
+    tabla_pdf.setStyle(TableStyle([
+        ('BACKGROUND', (0,0), (-1,0), colors.HexColor("#9FB8C7")),
+        ('TEXTCOLOR', (0,0), (-1,0), colors.black),
+        ('ALIGN', (0,0), (-1,-1), 'CENTER'),
+        ('GRID', (0,0), (-1,-2), 0.5, colors.grey),
+        ('FONTNAME', (0,0), (-1,0), 'Helvetica-Bold'),
+        ('FONTNAME', (-2,-1), (-1,-1), 'Helvetica-Bold'),
+    ]))
+
+    elementos.append(tabla_pdf)
+    documento.build(elementos)
+    return ruta_destino

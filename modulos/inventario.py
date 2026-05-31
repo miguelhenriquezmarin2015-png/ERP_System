@@ -79,7 +79,7 @@ class Inventario(tk.Frame):
         for widget in self.scrollbar_frame.winfo_children():
             widget.destroy()
 
-        headers = ["ID", "Nombre", "Costo", "Precio", "Stock", "Vencimiento"]
+        headers = ["ID", "Nombre", "Costo", "Precio", "Stock", "Vencimiento", "Acción"]
         for col_idx, text in enumerate(headers):
             lbl_header = tk.Label(
                 self.scrollbar_frame,
@@ -126,12 +126,24 @@ class Inventario(tk.Frame):
                 )
                 lbl_dato.grid(row=row_idx, column=col_idx, sticky="nsew")
 
+            btn_eliminar= tk.Button(
+                self.scrollbar_frame,
+                text= "Borrar",
+                bg="#F44336",
+                fg="white",
+                font= ("arial", 11, "bold"),
+                cursor="hand2",
+                command=lambda id_a=id_art, nom=nombre: self.borrar_articulo(id_a, nom)
+            )
+            btn_eliminar.grid(row=row_idx, column=6, sticky ="nsew", padx=5, pady=2)
+
         self.scrollbar_frame.grid_columnconfigure(0, weight=1)
         self.scrollbar_frame.grid_columnconfigure(1, weight=5) 
         self.scrollbar_frame.grid_columnconfigure(2, weight=2) 
         self.scrollbar_frame.grid_columnconfigure(3, weight=2) 
         self.scrollbar_frame.grid_columnconfigure(4, weight=2) 
         self.scrollbar_frame.grid_columnconfigure(5, weight=3) 
+        self.scrollbar_frame.grid_columnconfigure(6, weight=1)
 
     def verificar_alertas_stock(self):
         productos_bajos = ctrl.mostrar_inventario_baja_cantidad()
@@ -159,3 +171,15 @@ class Inventario(tk.Frame):
         
         self.verificar_alertas_stock()
         self.verificar_alertas_vencimiento()
+    
+    def borrar_articulo(self, id_articulo, nombre_articulo):
+        respuesta = messagebox.askyesno(
+            "Confirmar Eliminación",
+            f"¿Estás seguro de que deseas eliminar permanenteme el artículo '{nombre_articulo}'?\nEsta acción no se puede deshacer."
+        )
+        if respuesta:
+            try:
+                ctrl.eliminar_articulo(id_articulo)
+                messagebox.showinfo(f"{nombre_articulo} ha sido eliminado")
+            except Exception as e:
+                messagebox.showerror("Error", f"{nombre_articulo} no se pudo eliminar:\n{e}")
