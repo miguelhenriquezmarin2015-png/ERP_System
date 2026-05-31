@@ -70,12 +70,16 @@ class Login(PantallaBase):
         self.ent_p.place(x=70, y=260, width=260, height=35)
         self.configurar_animacion(self.ent_p, self.lbl_p, 235, 260)
 
+        self.ent_u.bind("<Return>", lambda event: self.login())
+        self.ent_p.bind("<Return>", lambda event: self.login())
+
         # Botones
         tk.Button(frame_login, text="INICIAR SESIÓN",command=self.login, bg="#2196F3", fg="white", font="arial 12 bold", bd=0, cursor="hand2").place(x=70, y=340, width=260, height=45)
         
     def login(self):
         self.user = self.ent_u.get().strip()
         self.pas = self.ent_p.get().strip()
+        
 
         if not self.user or not self.pas:
             tk.messagebox.showwarning("Campos vacíos", "Por favor, llene todos los campos.")

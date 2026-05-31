@@ -703,9 +703,11 @@ def obtener_compras_proveedor(id_proveedor):
     conn = conectar()
     cursor = conn.cursor()
     try:
-        cursor.execute("SELECT id, fecha, total_pagado, detalles FROM compras_proveedor WHERE id_proveedor = %s;", (id_proveedor,))
+        query = "SELECT id, fecha, total_pagado, detalles FROM compras_proveedor WHERE id_proveedor = %s;"
+        cursor.execute(query, (id_proveedor,))
         return cursor.fetchall()
-    except Exception:
+    except Exception as e:
+        print(f"Error en obtener_compras_proveedor: {e}") 
         return []
     finally:
         conn.close()
@@ -722,14 +724,34 @@ def obtener_pedidos_pendientes(id_proveedor):
         conn.close()
 
 def recibir_pedido_pendiente_db(id_pedido):
-    """Cambia el estado de un pedido a Recibido para quitarlo de la lista"""
     conn = conectar()
     cursor = conn.cursor()
     try:
-        cursor.execute("UPDATE pedidos_pendientes SET estado = 'Recibido' WHERE id = %s;", (id_pedido,))
-        conn.commit()
-        return True
-    except Exception:
+        query_select = "SELECT id_proveedor, monto_estimado, producto FROM pedidos_pendientes WHERE id = %s;"
+        cursor.execute(query_select, (id_pedido,))
+        pedido = cursor.fetchone()
+        
+        if pedido:
+            id_prov, monto_estimado, producto = pedido
+            nota_historial = f"Pedido Recibido: {producto}"
+            
+            query_insert = """
+                INSERT INTO compras_proveedor (id_proveedor, fecha, total_pagado, detalles) 
+                VALUES (%s, NOW(), %s, %s);
+            """
+            cursor.execute(query_insert, (id_prov, monto_estimado, nota_historial))
+            
+            query_delete = "DELETE FROM pedidos_pendientes WHERE id = %s;"
+            cursor.execute(query_delete, (id_pedido,))
+            
+            conn.commit()
+            return True
+            
+        return False
+        
+    except Exception as e:
+        conn.rollback()
+        print(f"Error en ctrl.recibir_pedido_pendiente_db: {e}")
         return False
     finally:
         conn.close()

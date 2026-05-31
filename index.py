@@ -81,8 +81,6 @@ def descargar_laragon(parent):
         sys.exit()
     threading.Thread(target=descargar, daemon=True).start()
 
-
-
 if __name__=="__main__":
     if not os.path.exists(ruta_config):
         primer_inicio()

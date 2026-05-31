@@ -292,7 +292,7 @@ class Proveedor(tk.Frame):
         for col_idx, text in enumerate(headers):
             tk.Label(frame_grid, text=text, font=("arial", 12, "bold"), bg="#9FB8C7", relief="groove", padx=5, pady=5).grid(row=0, column=col_idx, sticky="nsew")
 
-        compras = ctrl.obtener_compras_proveedor(id_proveedor)
+        compras = ctrl.obtener_compras_proveedor(int(id_proveedor))
             
         if not compras:
             tk.Label(frame_grid, text="No se registran compras procesadas con este proveedor.", font=("arial", 12, "italic"), bg="#C6D9E3").grid(row=1, column=0, columnspan=4, pady=20)
@@ -324,7 +324,7 @@ class Proveedor(tk.Frame):
             for col_idx, text in enumerate(headers):
                 tk.Label(frame_grid, text=text, font=("arial", 12, "bold"), bg="#9FB8C7", relief="groove", padx=5, pady=5).grid(row=0, column=col_idx, sticky="nsew")
 
-            pedidos = ctrl.obtener_pedidos_pendientes(id_proveedor)
+            pedidos = ctrl.obtener_pedidos_pendientes(int(id_proveedor))
             
             if not pedidos:
                 tk.Label(frame_grid, text="No hay órdenes pendientes de entrega.", font=("arial", 12, "italic"), bg="#C6D9E3").grid(row=1, column=0, columnspan=5, pady=20)
