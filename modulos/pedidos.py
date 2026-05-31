@@ -41,13 +41,26 @@ class Pedidos(tk.Frame):
         self.cargar_proveedores()
         self.entry_proveedor.bind("<<KeyRelease>>", self.filtrar_proveedores)
         
-        self.btn_confirmar = tk.Button(
+        """self.btn_confirmar = tk.Button(
             labelframe, text="Confirmar y Generar Orden",
             font="arial 12 bold", bg="#4CAF50", fg="white", cursor="hand2",
             command=self.procesar_y_exportar_pedido
         )
-        self.btn_confirmar.place(x=520, y=15, width=250, height=40)
+        self.btn_confirmar.place(x=520, y=15, width=250, height=40)"""
         
+        tk.Label(labelframe, text="Formato Exportación:", font="arial 10 bold", bg="#C6D9E3").place(x=460, y=0)
+        
+        self.formato_var = tk.StringVar(value="Ambos (PDF y CSV)")
+        self.combo_formato = ttk.Combobox(labelframe, textvariable=self.formato_var, values=["PDF", "CSV", "Ambos (PDF y CSV)"], state="readonly", font="arial 10")
+        self.combo_formato.place(x=460, y=25, width=150, height=30)
+
+        self.btn_confirmar = tk.Button(
+            labelframe, text="Confirmar Pedido", 
+            font="arial 11 bold", bg="#4CAF50", fg="white", cursor="hand2",
+            command=self.procesar_y_exportar_pedido
+        )
+        self.btn_confirmar.place(x=620, y=15, width=160, height=45)
+
         self.canvas_frame = tk.Frame(self, bg="#FFFFFF", bd=2, relief="groove")
         self.canvas_frame.place(x=20, y=140, width=800, height=460)
         
@@ -59,10 +72,10 @@ class Pedidos(tk.Frame):
             "<Configure>",
             lambda e: self.canvas.configure(scrollregion=self.canvas.bbox("all"))
         )
-        self.canvas.create_window((0,0), windows=self.frame_articulos_scroll, anchor="nw", width=770)
+        self.canvas.create_window((0,0), window=self.frame_articulos_scroll, anchor="nw", width=770)
         self.canvas.configure(yscrollcommand=self.scrollbar.set)
 
-        self.canvas.pack(side="left", fill="booth", expand=True)
+        self.canvas.pack(side="left", fill="both", expand=True)
         self.scrollbar.pack(side="right", fill="y")
     
     def cargar_catalogo_pedido(self, event=None):
@@ -81,10 +94,62 @@ class Pedidos(tk.Frame):
         tk.Label(fila_header, text="Costo ($)", font=("arial", 12, "bold"), bg="#9FB8C7", width=10).pack(side="left")
         tk.Label(fila_header, text="Stock Actual", font=("arial", 12, "bold"), bg="#9FB8C7", width=10).pack(side="left")
         tk.Label(fila_header, text="Cantidad a Pedir", font=("arial", 12, "bold"), bg="#9FB8C7", width=15).pack(side="right", padx=10)
-    
+
+        self.lista_productos = ctrl.obtener_catalogo_por_proveedor(id_proveedor)
+        self.entradas_cantidad = {}
+
+        for idx, prod in enumerate(self.lista_productos):
+            id_p, nombre, costo, precio, stock = prod
+            bg_color = "#F0F4F8" if idx % 2 == 0 else "#FFFFFF"
+            
+            fila_frame = tk.Frame(self.frame_articulos_scroll, bg=bg_color, pady=5)
+            fila_frame.pack(fill="x", padx=10, pady=2)
+            
+            tk.Label(fila_frame, text=nombre, font=("arial", 11), bg=bg_color, width=30, anchor="w").pack(side="left", padx=5)
+            tk.Label(fila_frame, text=f"${costo:.2f}", font=("arial", 11), bg=bg_color, width=10).pack(side="left")
+            tk.Label(fila_frame, text=str(stock), font=("arial", 11), bg=bg_color, width=10).pack(side="left")
+            
+            frame_selector = tk.Frame(fila_frame, bg=bg_color)
+            frame_selector.pack(side="right", padx=15)
+
+            entry_cant = tk.Entry(frame_selector, font=("arial", 12, "bold"), width=4, justify="center", relief="solid", bd=1)
+            entry_cant.insert(0, "0")
+
+            def cambiar_cantidad(entry, delta):
+                try:
+                    val = int(entry.get())
+                except ValueError:
+                    val = 0
+                nuevo = val + delta
+                if nuevo < 0: nuevo = 0
+                entry.delete(0, tk.END)
+                entry.insert(0, str(nuevo))
+            
+            btn_menos=tk.Button(frame_selector, text="-", font=("arial", 12, "bold"), width=2, bg="#FFCDD2", cursor="hand2", command=lambda e=entry_cant: cambiar_cantidad(e, -1))
+            btn_menos.pack(side="left", padx=2)
+            
+            entry_cant.pack(side="left", padx=5)
+            
+            btn_mas = tk.Button(frame_selector, text="+", font=("arial", 12, "bold"), width=2, bg="#C8E6C9", cursor="hand2", command=lambda e=entry_cant: cambiar_cantidad(e, 1))
+            btn_mas.pack(side="left", padx=2)
+
+            self.entradas_cantidad[id_p]= {
+                "entry": entry_cant,
+                "nombre": nombre,
+                "costo": costo
+            }
 
     def procesar_y_exportar_pedido(self):
+        proveedor_sel = self.entry_proveedor.get()
+        if not proveedor_sel or "-" not in proveedor_sel:
+            messagebox.showwarning("Error", "Seleccione un proveedor válido primero.")
+            return
+
+        id_proveedor = proveedor_sel.split("-")[0].strip()
+        nombre_proveedor = proveedor_sel.split("-")[1].strip()
+
         productos_pedidos = []
+        total_general = 0
         
         for id_p, info in self.entradas_cantidad.items():
             try:
@@ -98,69 +163,43 @@ class Pedidos(tk.Frame):
                     "cantidad": cantidad,
                     "costo": info["costo"]
                 })
+                total_general += cantidad * float(info["costo"])
                 
         if not productos_pedidos:
-            messagebox.showwarning("Pedido Vacío", "No has ingresado cantidades válidas para ningún producto.")
+            messagebox.showwarning("Pedido Vacío", "Use los botones [+] para seleccionar cantidades antes de confirmar.")
             return
 
-        ruta_archivo = filedialog.asksaveasfilename(
-            defaultextension=".csv",
-            filetypes=[("Archivos CSV", "*.csv")],
-            title="Exportar Orden de Pedido"
-        )
+        # NOTA: Aquí irá la validación de fondos cuando se implemente el módulo de Finanzas.
         
-        if not ruta_archivo:
+        exito, msj = ctrl.guardar_pedido_bd(id_proveedor, productos_pedidos)
+        if not exito:
+            messagebox.showerror("Error de Base de Datos", msj)
             return
 
-        try:
-            with open(ruta_archivo, mode="w", newline="", encoding="utf-8-sig") as f:
-                escritor = csv.writer(f, delimiter=";")
-                escritor.writerow(["Producto / Artículo", "Cantidad Solicitada", "Costo Unitario", "Total Fila"])
-                
-                total_general = 0
-                for item in productos_pedidos:
-                    total_fila = item["cantidad"] * float(item["costo"])
-                    total_general += total_fila
-                    escritor.writerow([item["nombre"], item["cantidad"], f"${item['costo']}", f"${total_fila:.2f}"])
-                    
-                escritor.writerow([])
-                escritor.writerow(["", "", "TOTAL DE LA ORDEN:", f"${total_general:.2f}"])
-                
-            messagebox.showinfo("Éxito", f"Pedido exportado correctamente a:\n{ruta_archivo}")
-        except Exception as e:
-            messagebox.showerror("Error", f"No se pudo guardar el archivo: {e}")
-
-    def exportar_a_csv(self, lista_productos):
-        ruta_guardado = filedialog.asksaveasfilename(
-            defaultextension=".csv",
-            filetypes=[("Archivos CSV", "*.csv")],
-            title="Guardar Orden de Pedido"
-        )
+        formato = self.combo_formato.get()
+        mensajes_rutas = []
         
-        if not ruta_guardado:
-            return 
-
         try:
-            with open(ruta_guardado, mode="w", newline="", encoding="utf-8-sig") as archivo:
-                escritor = csv.writer(archivo, delimiter=";") 
+            if "PDF" in formato or "Ambos" in formato:
+                ruta_pdf = ctrl.generar_orden_pedido_pdf(nombre_proveedor, productos_pedidos, total_general)
+                mensajes_rutas.append(f"• PDF: {ruta_pdf}")
                 
-                escritor.writerow(["Descripción del Artículo", "Cantidad Pedida", "Costo Unitario", "Total"])
+            if "CSV" in formato or "Ambos" in formato:
+                ruta_csv = ctrl.generar_csv_pedido(nombre_proveedor, productos_pedidos, total_general)
+                mensajes_rutas.append(f"• CSV: {ruta_csv}")
                 
-                for item in lista_productos:
-                    total_articulo = int(item["cantidad"]) * float(item["costo"])
-                    escritor.writerow([
-                        item["nombre"], 
-                        item["cantidad"], 
-                        item["costo"], 
-                        total_articulo
-                    ])
-                    
-            messagebox.showinfo("Éxito", f"Pedido descargado correctamente en:\n{ruta_guardado}")
+            rutas_str = "\n".join(mensajes_rutas)
+            messagebox.showinfo("Confirmado", f"{msj}\n\nArchivos generados en Descargas:\n{rutas_str}")
+            
+            self.entry_proveedor.set("")
+            for widget in self.frame_articulos_scroll.winfo_children():
+                widget.destroy()
+            self.entradas_cantidad.clear()
             
         except Exception as e:
-            messagebox.showerror("Error", f"No se pudo generar el CSV: {e}")
+            messagebox.showerror("Error de Exportación", f"Pedido guardado en BD, pero falló la exportación: {e}")
 
-    def cargar_catalogo_pedido(self, event=None):
+    """def cargar_catalogo_pedido(self, event=None):
     
         id_proveedor = self.entry_proveedor.get().split("-")[0].strip() 
         
@@ -189,3 +228,4 @@ class Pedidos(tk.Frame):
                 "nombre": nombre,
                 "costo": costo
             }
+"""

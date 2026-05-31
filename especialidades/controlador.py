@@ -8,6 +8,7 @@ from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib import colors
 import os
 import sys
+import csv
 
 """al terminar el programa cambiar de base de datos mysql por ende cambiar: sql.connect('negocio.db') por conectar() 
 y cambiar los ? por %s en las consultas"""
@@ -612,16 +613,29 @@ def tipo_cliente(nombre_cliente):
     return resultado[0] if resultado else 'Natural'
 
 #proveedores----
-def obtener_nombres_proveedores():
+def obtener_proveedores():
+    
     conn = conectar()
     cursor = conn.cursor()
-    
     try:
         cursor.execute("SELECT id, nombre, rif, contacto FROM proveedores;")
-        resultados = cursor.fetchall()
-        return resultados
+        return cursor.fetchall() # Devuelve las tuplas completas de 4 elementos
     except Exception as e:
         print(f"Error al consultar proveedores: {str(e)}")
+        return []
+    finally:
+        conn.close()
+
+def obtener_nombres_proveedores():
+    
+    conn = conectar()
+    cursor = conn.cursor()
+    try:
+        cursor.execute("SELECT id, nombre FROM proveedores ORDER BY nombre ASC")
+        resultados = cursor.fetchall()
+        return [f"{prov[0]} - {prov[1]}" for prov in resultados] # Devuelve texto
+    except Exception as e:
+        print(f"Error al consultar nombres de proveedores: {str(e)}")
         return []
     finally:
         conn.close()
@@ -738,7 +752,7 @@ def actualizar_articulo_catalogo(id_producto, nombre, costo, precio):
 
 def guardar_pedido_bd(id_proveedor, lista_productos):
     conn = conectar()
-    cursor = conn.cursor
+    cursor = conn.cursor()
     try:
         query = "INSERT INTO pedidos_pendientes (id_proveedor, producto, cantidad, monto_estimado, estado) VALUES (%s, %s, %s, %s, 'Pendiente')"
         for prod in lista_productos:
@@ -751,10 +765,10 @@ def guardar_pedido_bd(id_proveedor, lista_productos):
     finally:
         conn.close()
 
-def generar_orden_pedido(nombre_proveedor, lista_productos, total_general):
+def generar_orden_pedido_pdf(nombre_proveedor, lista_productos, total_general):
     carpeta_descargas = os.path.join(os.path.expanduser("~"), "Downloads")
     fecha_actual= datetime.now().strftime("%Y%m%d_%H%M%S")
-    nombre_archivo = f"Orden_Pedido_{nombre_proveedor.replace('','_')}_{fecha_actual}.pdf"
+    nombre_archivo = f"Orden_Pedido_{nombre_proveedor.replace(' ','_')}_{fecha_actual}.pdf"
     ruta_destino = os.path.join(carpeta_descargas, nombre_archivo)
 
     documento= SimpleDocTemplate(ruta_destino, pagesize=letter)
@@ -785,4 +799,25 @@ def generar_orden_pedido(nombre_proveedor, lista_productos, total_general):
 
     elementos.append(tabla_pdf)
     documento.build(elementos)
+    return ruta_destino
+
+def generar_csv_pedido(nombre_proveedor, lista_productos, total_general):
+    carpeta_descargas = os.path.join(os.path.expanduser("~"), "Downloads")
+    fecha_actual = datetime.now().strftime("%Y%m%d_%H%M%S")
+    nombre_archivo = f"Orden_Pedido_{nombre_proveedor.replace(' ', '_')}_{fecha_actual}.csv"
+    ruta_destino = os.path.join(carpeta_descargas, nombre_archivo)
+
+    with open(ruta_destino, mode="w", newline="", encoding="utf-8-sig") as f:
+        escritor = csv.writer(f, delimiter=";")
+        escritor.writerow(["Proveedor:", nombre_proveedor, "Fecha:", datetime.now().strftime('%d/%m/%Y %H:%M')])
+        escritor.writerow([])
+        escritor.writerow(["Producto / Artículo", "Cantidad", "Costo Unitario", "Subtotal"])
+        
+        for p in lista_productos:
+            subtotal = p['cantidad'] * float(p['costo'])
+            escritor.writerow([p['nombre'], p['cantidad'], f"${p['costo']:.2f}", f"${subtotal:.2f}"])
+            
+        escritor.writerow([])
+        escritor.writerow(["", "", "TOTAL DE LA ORDEN:", f"${total_general:.2f}"])
+        
     return ruta_destino
