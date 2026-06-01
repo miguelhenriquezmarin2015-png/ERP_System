@@ -19,28 +19,29 @@ class Pedidos(tk.Frame):
     def filtrar_proveedores(self, event=None):
         texto_buscado = self.entry_proveedor.get().lower().strip()
         
-        todos_los_proveedores = ctrl.obtener_nombres_proveedores()
+        if not hasattr(self, 'todos_los_proveedores') or not self.todos_los_proveedores:
+            self.todos_los_proveedores = ctrl.obtener_nombres_proveedores()
         
         if texto_buscado == "":
-            self.entry_proveedor['values'] = todos_los_proveedores
+            self.entry_proveedor['values'] = self.todos_los_proveedores
         else:
             proveedores_filtrados = [
-                prov for prov in todos_los_proveedores 
+                prov for prov in self.todos_los_proveedores
                 if texto_buscado in str(prov).lower()
             ]
-            
             self.entry_proveedor['values'] = proveedores_filtrados
 
     def widgets(self):
         
         labelframe = LabelFrame(self, text="Pedidos", font="arial 20 bold", bg="#C6D9E3")
-        labelframe.place(x=20, y=20, width=400, height=200)
+        labelframe.place(x=20, y=20, width=400, height=100)
 
         lavel_proveedor = Label(labelframe, text="Proveedor:", font="arial 14 bold", bg="#C6D9E3")
         lavel_proveedor.place(x=10, y=10)
         
         self.entry_proveedor = ttk.Combobox(labelframe, font="arial 14 bold")
-        self.entry_proveedor.place(x=110, y=10, width=200, height=40)
+        self.entry_proveedor.place(x=130, y=10, width=200, height=40)
+        self.entry_proveedor.bind("<KeyRelease>", lambda event: self.filtrar_proveedores())
 
         tk.Label(labelframe, text="Formato Exportación:", font="arial 10 bold", bg="#C6D9E3").place(x=460, y=0)
         
@@ -49,7 +50,7 @@ class Pedidos(tk.Frame):
         self.combo_formato.place(x=460, y=25, width=150, height=30)
 
         self.canvas_frame = tk.Frame(self, bg="#FFFFFF", bd=2, relief="groove")
-        self.canvas_frame.place(x=20, y=140, width=800, height=400)
+        self.canvas_frame.place(x=20, y=150, width=1160, height=400)
 
         self.canvas = tk.Canvas(self.canvas_frame, bg="#FFFFFF", highlightthickness=0)
         self.scrollbar = tk.Scrollbar(self.canvas_frame, orient="vertical", command=self.canvas.yview)
@@ -60,7 +61,7 @@ class Pedidos(tk.Frame):
             lambda e: self.canvas.configure(scrollregion=self.canvas.bbox("all"))
         )
 
-        self.canvas.create_window((0, 0), window=self.frame_articulos_scroll, anchor="nw", width=770)
+        self.canvas.create_window((0, 0), window=self.frame_articulos_scroll, anchor="nw", width=1130)
         self.canvas.configure(yscrollcommand=self.scrollbar.set)
 
         self.canvas.pack(side="left", fill="both", expand=True)
@@ -91,56 +92,57 @@ class Pedidos(tk.Frame):
             widget.destroy()
 
         proveedor_sel = self.entry_proveedor.get().strip()
-        
-        if not proveedor_sel:
-            return
-        proveedor_sel = self.entry_proveedor.get().strip()
         if not proveedor_sel:
             return
 
-        for widget in self.frame_articulos_scroll.winfo_children():
-            widget.destroy()
-
-        frame_header = tk.Frame(self.frame_articulos_scroll, bg="#ECEFF1", height=30)
+        frame_header = tk.Frame(self.frame_articulos_scroll, bg="#ECEFF1", height=35)
         frame_header.pack(fill="x", padx=5, pady=(2, 5))
+        frame_header.pack_propagate(False)  
 
-        headers = [("Producto / Artículo", 28), ("Costo Prov.", 12), ("Inv. Actual", 12), ("Acomprar", 15)]
-        for text, width in headers:
-            anchor_val = "w" if text == "Producto / Artículo" else "center"
-            lbl_h = tk.Label(frame_header, text=text, font=("arial", 11, "bold"), bg="#ECEFF1", width=width, anchor=anchor_val)
-            
-            if text == "Acomprar":
-                lbl_h.pack(side="right", padx=25)
-            else:
-                lbl_h.pack(side="left", padx=5)
+        headers_config = [
+            ("Producto / Artículo", "w"),
+            ("Costo Prov.", "center"),
+            ("Inv. Actual", "center")
+        ]
+
+        for text, anchor_val in headers_config:
+            lbl_h = tk.Label(frame_header, text=text, font=("arial", 11, "bold"), bg="#ECEFF1", anchor=anchor_val)
+            lbl_h.pack(side="left", padx=15, expand=True, fill="both")
+
+        lbl_acomprar = tk.Label(frame_header, text="Acomprar", font=("arial", 11, "bold"), bg="#ECEFF1", anchor="center")
+        lbl_acomprar.pack(side="right", padx=35)
+
 
         articulos = ctrl.obtener_catalogo_por_proveedor(proveedor_sel)
-        
-        self.items_pedido = {} 
+        self.items_pedido = {}
+
+        if not articulos:
+            return
 
         for idx, prod in enumerate(articulos):
             id_p, nombre, costo, precio, stock = prod
             color_fila = "#F8F9FA" if idx % 2 == 0 else "white"
-
-            fila = tk.Frame(self.frame_articulos_scroll, bg=color_fila, pady=6)
-            fila.pack(fill="x", pady=1)
-
-            lbl_nom = tk.Label(fila, text=f"{nombre}", font=("arial", 11), bg=color_fila, width=28, anchor="w")
-            lbl_nom.pack(side="left", padx=5)
             
-            lbl_cos = tk.Label(fila, text=f"${float(costo):.2f}", font=("arial", 11), bg=color_fila, width=12, anchor="center")
-            lbl_cos.pack(side="left", padx=5)
+            fila = tk.Frame(self.frame_articulos_scroll, bg=color_fila, height=40)
+            fila.pack(side="top", fill="x", expand=True, padx=5, pady=2)
+            fila.pack_propagate(False)  
+                        
+            lbl_nom = tk.Label(fila, text=f"{nombre}", font=("arial", 11), bg=color_fila, anchor="w")
+            lbl_nom.pack(side="left", padx=15, expand=True, fill="both")
             
-            lbl_stk = tk.Label(fila, text=f"{stock} uds", font=("arial", 11), bg=color_fila, width=12, anchor="center")
-            lbl_stk.pack(side="left", padx=5)
-
+            lbl_cos = tk.Label(fila, text=f"${float(costo):.2f}", font=("arial", 11), bg=color_fila, anchor="center")
+            lbl_cos.pack(side="left", padx=5, expand=True, fill="both")
+            
+            lbl_stk = tk.Label(fila, text=f"{stock} uds", font=("arial", 11), bg=color_fila, anchor="center")
+            lbl_stk.pack(side="left", padx=5, expand=True, fill="both")
+            
             frame_control = tk.Frame(fila, bg=color_fila)
-            frame_control.pack(side="right", padx=25)
-
+            frame_control.pack(side="right", padx=35, fill="y")
+            
             entry_cant = tk.Entry(frame_control, font=("arial", 10, "bold"), width=4, justify="center")
             entry_cant.bind("<KeyRelease>", lambda e: self.recalcular_total_pedido())
             entry_cant.insert(0, "0")
-
+            
             def cambiar_cantidad(operacion, entry=entry_cant):
                 try:
                     actual = int(entry.get())
@@ -152,16 +154,27 @@ class Pedidos(tk.Frame):
                 
                 self.recalcular_total_pedido()
 
-            btn_menos = tk.Button(frame_control, text="-", font=("arial", 9, "bold"), width=2, bg="#CFD8DC", command=lambda e=entry_cant: cambiar_cantidad("-", e))
-            btn_mas = tk.Button(frame_control, text="+", font=("arial", 9, "bold"), width=2, bg="#B0BEC5", command=lambda e=entry_cant: cambiar_cantidad("+", e))
-
+            btn_menos = tk.Button(
+                frame_control, text="-", font=("arial", 9, "bold"), width=2, bg="#CFD8DC", 
+                command=lambda: cambiar_cantidad("-")
+            )
+            btn_mas = tk.Button(
+                frame_control, text="+", font=("arial", 9, "bold"), width=2, bg="#B0BEC5", 
+                command=lambda: cambiar_cantidad("+")
+            )
+            
             btn_menos.pack(side="left", padx=2)
-            entry_cant.pack(side="left", padx=2)
+            entry_cant.pack(side="left", padx=2, expand=True, fill="y")
             btn_mas.pack(side="left", padx=2)
-
+            
             self.items_pedido[id_p] = {"entry": entry_cant, "nombre": nombre, "costo": float(costo)}
 
         self.recalcular_total_pedido()
+        
+        self.frame_articulos_scroll.update_idletasks()
+        if hasattr(self, 'canvas'):
+            self.canvas.configure(scrollregion=self.canvas.bbox("all"))
+            self.canvas.yview_moveto(0)
 
     def procesar_y_exportar_pedido(self):
         proveedor_sel = self.entry_proveedor.get()

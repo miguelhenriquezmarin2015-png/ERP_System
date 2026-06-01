@@ -727,12 +727,12 @@ def recibir_pedido_pendiente_db(id_pedido):
     conn = conectar()
     cursor = conn.cursor()
     try:
-        query_select = "SELECT id_proveedor, monto_estimado, producto FROM pedidos_pendientes WHERE id = %s;"
+        query_select = "SELECT id_proveedor, monto_estimado, producto, cantidad FROM pedidos_pendientes WHERE id = %s;"
         cursor.execute(query_select, (id_pedido,))
         pedido = cursor.fetchone()
         
         if pedido:
-            id_prov, monto_estimado, producto = pedido
+            id_prov, monto_estimado, producto, cantidad_recibida = pedido
             nota_historial = f"Pedido Recibido: {producto}"
             
             query_insert = """
@@ -740,6 +740,23 @@ def recibir_pedido_pendiente_db(id_pedido):
                 VALUES (%s, NOW(), %s, %s);
             """
             cursor.execute(query_insert, (id_prov, monto_estimado, nota_historial))
+            
+            query_buscar_inv = "SELECT stock FROM inventario WHERE nombre = %s;"
+            cursor.execute(query_buscar_inv, (producto,))
+            item_inventario = cursor.fetchone()
+            
+            if item_inventario:
+                stock_actual = item_inventario[0]
+                nuevo_stock = stock_actual + cantidad_recibida
+                query_update_inv = "UPDATE inventario SET stock = %s WHERE nombre = %s;"
+                cursor.execute(query_update_inv, (nuevo_stock, producto))
+            else:
+                costo_unitario = monto_estimado / cantidad_recibida if cantidad_recibida > 0 else 0
+                query_crear_inv = """
+                    INSERT INTO inventario (nombre, costo, precio, stock, perecedero, vencimiento) 
+                    VALUES (%s, %s, 0.00, %s, 0, NULL);
+                """
+                cursor.execute(query_crear_inv, (producto, costo_unitario, cantidad_recibida))
             
             query_delete = "DELETE FROM pedidos_pendientes WHERE id = %s;"
             cursor.execute(query_delete, (id_pedido,))
@@ -751,7 +768,7 @@ def recibir_pedido_pendiente_db(id_pedido):
         
     except Exception as e:
         conn.rollback()
-        print(f"Error en ctrl.recibir_pedido_pendiente_db: {e}")
+        print(f"Error en ctrl.recibir_pedido_pendiente_db con inventario: {e}")
         return False
     finally:
         conn.close()

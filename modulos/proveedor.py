@@ -351,6 +351,16 @@ class Proveedor(tk.Frame):
             if ctrl.recibir_pedido_pendiente_db(id_ped):
                 messagebox.showinfo("Éxito", "¡El pedido ha sido marcado como recibido correctamente!", parent=top_pedidos)
                 refrescar_pedidos() 
+                pantalla_inventario = None
+                for llave, instancia_frame in self.controller.frames.items():
+                    # Con __class__.__name__ obtenemos el nombre de la clase como texto (ej. "Inventario")
+                    if "inventario" in instancia_frame.__class__.__name__.lower():
+                        pantalla_inventario = instancia_frame
+                        break
+                
+                # Si la encuentra y tiene el método, fuerza la recarga de los artículos
+                if pantalla_inventario and hasattr(pantalla_inventario, 'cargar_articulos'):
+                    pantalla_inventario.cargar_articulos()
             else:
                 messagebox.showerror("Error", "No se pudo actualizar el estado del pedido.", parent=top_pedidos)
 

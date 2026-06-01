@@ -9,6 +9,7 @@ class Inventario(tk.Frame):
         self.controller=controller
         self.filtro_bajo_stock_activo = False
         self.widgets()
+        self.bind("<FocusIn>", lambda event: self.cargar_articulos() if event.widget == self else None)
 
     def widgets(self):
         canvas_articulos=tk.Label(self,text="ARTICULOS",font="arial 20 bold",bg="#C6D9E3")
@@ -144,6 +145,10 @@ class Inventario(tk.Frame):
         self.scrollbar_frame.grid_columnconfigure(4, weight=2) 
         self.scrollbar_frame.grid_columnconfigure(5, weight=3) 
         self.scrollbar_frame.grid_columnconfigure(6, weight=1)
+
+        self.scrollbar_frame.update_idletasks()
+        self.canvas.configure(scrollregion=self.canvas.bbox("all"))
+        self.canvas.yview_moveto(0)
 
     def verificar_alertas_stock(self):
         productos_bajos = ctrl.mostrar_inventario_baja_cantidad()
