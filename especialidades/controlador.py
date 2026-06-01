@@ -75,7 +75,10 @@ def crear_base_de_datos():
             "CREATE TABLE IF NOT EXISTS proveedores ( id INT AUTO_INCREMENT PRIMARY KEY, nombre VARCHAR(255) NOT NULL, rif VARCHAR(50) NOT NULL UNIQUE, contacto VARCHAR(255) NOT NULL )",
             "CREATE TABLE IF NOT EXISTS proveedor_catalogo ( id_proveedor INT NOT NULL, id_producto INT NOT NULL, PRIMARY KEY(id_proveedor, id_producto), FOREIGN KEY(id_proveedor) REFERENCES proveedores(id) ON DELETE CASCADE, FOREIGN KEY(id_producto) REFERENCES inventario(id) ON DELETE CASCADE )",
             "CREATE TABLE IF NOT EXISTS compras_proveedor ( id INT AUTO_INCREMENT PRIMARY KEY, id_proveedor INT NOT NULL, fecha DATETIME NOT NULL, total_pagado DECIMAL(12,2) NOT NULL, detalles TEXT, FOREIGN KEY(id_proveedor) REFERENCES proveedores(id) ON DELETE CASCADE )",
-            "CREATE TABLE IF NOT EXISTS pedidos_pendientes ( id INT AUTO_INCREMENT PRIMARY KEY, id_proveedor INT NOT NULL, producto VARCHAR(255) NOT NULL, cantidad INT NOT NULL, monto_estimado DECIMAL(12,2) NOT NULL, estado VARCHAR(50) NOT NULL DEFAULT 'Pendiente', FOREIGN KEY(id_proveedor) REFERENCES proveedores(id) ON DELETE CASCADE )"
+            "CREATE TABLE IF NOT EXISTS pedidos_pendientes ( id INT AUTO_INCREMENT PRIMARY KEY, id_proveedor INT NOT NULL, producto VARCHAR(255) NOT NULL, cantidad INT NOT NULL, monto_estimado DECIMAL(12,2) NOT NULL, estado VARCHAR(50) NOT NULL DEFAULT 'Pendiente', FOREIGN KEY(id_proveedor) REFERENCES proveedores(id) ON DELETE CASCADE )",
+            "CREATE TABLE IF NOT EXISTS pedidos_pendientes ( id INT AUTO_INCREMENT PRIMARY KEY, id_proveedor INT NOT NULL, producto VARCHAR(255) NOT NULL, cantidad INT NOT NULL, monto_estimado DECIMAL(12,2) NOT NULL, estado VARCHAR(50) NOT NULL DEFAULT 'Pendiente', FOREIGN KEY(id_proveedor) REFERENCES proveedores(id) ON DELETE CASCADE )",
+            "CREATE TABLE IF NOT EXISTS fondos ( id INT AUTO_INCREMENT PRIMARY KEY, nombre VARCHAR(100) NOT NULL UNIQUE, saldo DECIMAL(12,2) NOT NULL DEFAULT 0.0 )",
+            "CREATE TABLE IF NOT EXISTS egresos ( id INT AUTO_INCREMENT PRIMARY KEY, descripcion VARCHAR(255) NOT NULL, monto DECIMAL(12,2) NOT NULL, fecha DATETIME NOT NULL, id_fondo INT, FOREIGN KEY(id_fondo) REFERENCES fondos(id) )"
         ]
         for tabla in tablas:
             cursor.execute(tabla)
@@ -83,6 +86,15 @@ def crear_base_de_datos():
         cursor.execute("SELECT COUNT(*) FROM usuarios")
         if cursor.fetchone()[0] == 0:
             cursor.execute("INSERT INTO usuarios (username, password, rol) VALUES ('admin', 'admin123', 'Administrador')") 
+        cursor.execute("SELECT COUNT(*) FROM fondos")
+        if cursor.fetchone()[0] == 0:
+            fondos_iniciales = [
+                ("Fondo para Reparaciones", 0.0),
+                ("Fondo de Emergencia", 0.0),
+                ("Fondo de Nóminas", 0.0),
+                ("Fondo de Reposición", 0.0) # Para pagarle a proveedores
+            ]
+            cursor.executemany("INSERT INTO fondos (nombre, saldo) VALUES (%s, %s)", fondos_iniciales)
         conexion.commit()
         conexion.close()
 
@@ -889,3 +901,130 @@ def generar_csv_pedido(nombre_proveedor, lista_productos, total_general):
         escritor.writerow(["", "", "TOTAL DE LA ORDEN:", f"${total_general:.2f}"])
         
     return ruta_destino
+
+    #Finanzas
+def calcular_balance_general():
+    conn = conectar()
+    cursor = conn.cursor()
+    try:
+        cursor.execute("SELECT SUM(total) FROM ventas")
+        res_ventas = cursor.fetchone()[0]
+        ingresos = float(res_ventas) if res_ventas else 0.0
+
+        cursor.execute("SELECT SUM(total_pagado) FROM compras_proveedor")
+        res_compras = cursor.fetchone()[0]
+        egresos_compras = float(res_compras) if res_compras else 0.0
+
+        cursor.execute("SELECT SUM(monto) FROM egresos")
+        res_egresos = cursor.fetchone()[0]
+        otros_egresos = float(res_egresos) if res_egresos else 0.0
+
+        cursor.execute("SELECT SUM(saldo) FROM fondos")
+        res_fondos = cursor.fetchone()[0]
+        dinero_en_fondos = float(res_fondos) if res_fondos else 0.0
+
+        egresos_totales = egresos_compras + otros_egresos
+        balance_disponible = ingresos - egresos_totales - dinero_en_fondos
+
+        return {
+            "ingresos": ingresos,
+            "egresos": egresos_totales,
+            "dinero_fondos": dinero_en_fondos,
+            "balance_disponible": balance_disponible
+            }
+    except Exception as e:
+        print(f"Error calculando balance: {e}")
+        return {"ingresos": 0, "egresos": 0, "dinero_fondos": 0, "balance_disponible": 0}
+    finally:
+        conn.close()
+
+def obtener_lista_fondos():
+    conn = conectar()
+    cursor = conn.cursor()
+    try:
+        cursor.execute("SELECT id, nombre, saldo FROM fondos")
+        return cursor.fetchall()
+    except Exception:
+        return []
+    finally:
+        conn.close()
+
+def transferir_a_fondo(id_fondo, monto_a_ingresar):
+    """Mete dinero del balance general a un fondo específico."""
+    balance_actual = calcular_balance_general()["balance_disponible"]
+    if monto_a_ingresar > balance_actual:
+        return False, "Fondos insuficientes en el Balance General."
+        
+    conn = conectar()
+    cursor = conn.cursor()
+    try:
+        cursor.execute("UPDATE fondos SET saldo = saldo + %s WHERE id = %s", (monto_a_ingresar, id_fondo))
+        conn.commit()
+        return True, "Dinero ingresado al fondo exitosamente."
+    except Exception as e:
+        conn.rollback()
+        return False, f"Error al ingresar: {e}"
+    finally:
+        conn.close()
+
+def registrar_egreso(descripcion, monto, id_fondo=None):
+    """Registra un gasto. Si se envía un id_fondo, descuenta el dinero de ese fondo en vez del balance."""
+    conn = conectar()
+    cursor = conn.cursor()
+    try:
+        if id_fondo:
+            cursor.execute("SELECT saldo FROM fondos WHERE id = %s", (id_fondo,))
+            saldo_fondo = float(cursor.fetchone()[0])
+            if monto > saldo_fondo:
+                return False, "El fondo seleccionado no tiene suficiente dinero."
+            cursor.execute("UPDATE fondos SET saldo = saldo - %s WHERE id = %s", (monto, id_fondo))
+
+        cursor.execute("INSERT INTO egresos (descripcion, monto, fecha, id_fondo) VALUES (%s, %s, NOW(), %s)", (descripcion, monto, id_fondo))
+        conn.commit()
+        return True, "Gasto registrado exitosamente."
+    except Exception as e:
+        conn.rollback()
+        return False, f"Error al registrar gasto: {e}"
+    finally:
+        conn.close()
+
+def obtener_movimientos(tipo="Todo"):
+    conn = conectar()
+    cursor = conn.cursor()
+    movimientos = []
+    try:
+        if tipo in ["Todo", "Ingresos"]:
+            cursor.execute("SELECT id, 'Ingreso', cliente, fecha, total FROM ventas")
+            for f in cursor.fetchall():
+                movimientos.append((f[0], f[1], f[2], f[3].strftime("%Y-%m-%d %H:%M") if f[3] else "", f[4]))
+        
+        if tipo in ["Todo", "Egresos"]:
+            # Gastos manuales
+            cursor.execute("SELECT id, 'Egreso', descripcion, fecha, monto FROM egresos")
+            for f in cursor.fetchall():
+                movimientos.append((f[0], f[1], f[2], f[3].strftime("%Y-%m-%d %H:%M") if f[3] else "", f[4]))
+            # Pagos automáticos a proveedores
+            cursor.execute("SELECT id, 'Pago Proveedor', detalles, fecha, total_pagado FROM compras_proveedor")
+            for f in cursor.fetchall():
+                movimientos.append((f[0], f[1], f[2], f[3].strftime("%Y-%m-%d %H:%M") if f[3] else "", f[4]))
+        
+        # Ordenar desde el más reciente al más antiguo
+        movimientos.sort(key=lambda x: x[3], reverse=True)
+        return movimientos
+    except Exception as e:
+        print(f"Error obteniendo movimientos: {e}")
+        return []
+    finally:
+        conn.close()
+
+def obtener_saldo_fondo(nombre_fondo):
+    conn = conectar()
+    cursor = conn.cursor()
+    try:
+        cursor.execute("SELECT saldo FROM fondos WHERE nombre = %s", (nombre_fondo,))
+        res = cursor.fetchone()
+        return float(res[0]) if res else 0.0
+    except Exception:
+        return 0.0
+    finally:
+        conn.close()
