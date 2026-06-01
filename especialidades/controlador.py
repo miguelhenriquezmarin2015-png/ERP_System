@@ -703,16 +703,13 @@ def obtener_catalogo_por_proveedor(id_proveedor):
     conn = conectar()
     cursor = conn.cursor()
     try:
-        # 🚀 CORRECCIÓN CRÍTICA: Si 'id_proveedor' viene como una tupla (ej: (1, 'kevin')), 
-        # extraemos únicamente el ID numérico de la posición 0 para que MySQL no lance error.
         if isinstance(id_proveedor, tuple):
             id_real = id_proveedor[0]
         else:
             id_real = id_proveedor
 
-        # Ejecutamos el query relacional exacto usando el ID limpio
         query = """
-            SELECT pc.id_producto, i.nombre, i.costo, i.precio, i.stock, i.perecedero, i.vencimiento
+            SELECT pc.id_producto, i.nombre, i.costo, i.precio, i.stock
             FROM proveedor_catalogo pc
             INNER JOIN inventario i ON pc.id_producto = i.id
             WHERE pc.id_proveedor = %s;
