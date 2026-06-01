@@ -105,10 +105,16 @@ def guardar_articulo(nombre,costo,precio,stock,perecedero,vencimiento):
 def obtener_articulos():
     conn = conectar()
     cursor = conn.cursor()
-    cursor.execute("SELECT id, nombre, costo, precio, stock, perecedero, vencimiento FROM inventario")
-    articulos = cursor.fetchall()
-    conn.close()
-    return articulos
+    try:
+        query = "SELECT id, nombre, costo, precio, stock, perecedero, vencimiento FROM inventario;"
+        cursor.execute(query)
+        return cursor.fetchall()
+    except Exception as e:
+        print(f"Error en ctrl.obtener_articulos: {e}")
+        return []
+    finally:
+        conn.close()
+
 
 def buscar_articulo(nombre):
     conn = conectar()
@@ -657,44 +663,56 @@ def registrar_proveedor_db(nombre, rif, contacto):
     finally:
         conn.close()
 
-def agregar_producto_a_catalogo(id_proveedor, nombre_prod, costo, precio):
+def agregar_producto_a_catalogo(id_proveedor, nombre, costo, precio, perecedero, vencimiento):
     conn = conectar()
     cursor = conn.cursor()
     try:
-        cursor.execute("""
-            INSERT IGNORE INTO inventario (nombre, costo, precio, stock) 
-            VALUES (%s, %s, %s, 0);
-        """, (nombre_prod, costo, precio))
+        fecha_sql = None if (vencimiento == "" or vencimiento == "No Aplica") else vencimiento
+
+        query_inventario = """
+            INSERT INTO inventario (nombre, costo, precio, stock, perecedero, vencimiento) 
+            VALUES (%s, %s, %s, 0, %s, %s)
+            ON DUPLICATE KEY UPDATE 
+                costo = VALUES(costo), 
+                precio = VALUES(precio), 
+                perecedero = VALUES(perecedero), 
+                vencimiento = VALUES(vencimiento);
+        """
+        cursor.execute(query_inventario, (nombre, costo, precio, int(perecedero), fecha_sql))
         
-        cursor.execute("SELECT id FROM inventario WHERE nombre = %s;", (nombre_prod,))
+        cursor.execute("SELECT id FROM inventario WHERE nombre = %s;", (nombre,))
         id_producto = cursor.fetchone()[0]
-        
-        cursor.execute("""
+
+        query_catalogo = """
             INSERT IGNORE INTO proveedor_catalogo (id_proveedor, id_producto) 
             VALUES (%s, %s);
-        """, (id_proveedor, id_producto))
-        
+        """
+        cursor.execute(query_catalogo, (id_proveedor, id_producto))
+
         conn.commit()
-        return True, f"'{nombre_prod}' añadido al catálogo e inventario con éxito."
+        return True, "¡Artículo guardado exitosamente en catálogo e inventario!"
+        
     except Exception as e:
-        return False, f"Error al optimizar catálogo: {str(e)}"
+        conn.rollback()
+        print(f"Error relacional en base de datos: {e}")
+        return False, f"Error en la base de datos: {e}"
     finally:
         conn.close()
 
 def obtener_catalogo_por_proveedor(id_proveedor):
-    """Trae solo los productos que este proveedor vende"""
     conn = conectar()
     cursor = conn.cursor()
     try:
         query = """
-            SELECT i.id, i.nombre, i.costo, i.precio, i.stock 
-            FROM inventario i
-            INNER JOIN proveedor_catalogo pc ON i.id = pc.id_producto
+            SELECT pc.id_producto, i.nombre, i.costo, i.precio, i.stock, i.perecedero, i.vencimiento
+            FROM proveedor_catalogo pc
+            INNER JOIN inventario i ON pc.id_producto = i.id
             WHERE pc.id_proveedor = %s;
         """
         cursor.execute(query, (id_proveedor,))
         return cursor.fetchall()
-    except Exception:
+    except Exception as e:
+        print(f"Error en ctrl.obtener_catalogo_por_proveedor: {e}")
         return []
     finally:
         conn.close()
@@ -773,21 +791,27 @@ def recibir_pedido_pendiente_db(id_pedido):
     finally:
         conn.close()
 
-def actualizar_articulo_catalogo(id_producto, nombre, costo, precio):
-    conn = conectar() 
+def actualizar_articulo_catalogo(id_producto, nombre, costo, precio, perecedero, vencimiento):
+    conn = conectar()
     cursor = conn.cursor()
     try:
-        cursor.execute("""
+        fecha_sql = None if (vencimiento == "No Aplica" or vencimiento == "") else vencimiento
+        
+        query = """
             UPDATE inventario 
-            SET nombre = %s, costo = %s, precio = %s 
-            WHERE id = %s
-        """, (nombre, costo, precio, id_producto))
+            SET nombre = %s, costo = %s, precio = %s, perecedero = %s, vencimiento = %s 
+            WHERE id = %s;
+        """
+        cursor.execute(query, (nombre, costo, precio, int(perecedero), fecha_sql, id_producto))
         conn.commit()
-        return True, "Artículo actualizado con éxito."
+        return True, "¡Artículo actualizado con éxito!"
     except Exception as e:
-        return False, f"Error al actualizar en la base de datos: {str(e)}"
+        conn.rollback()
+        print(f"Error al actualizar artículo: {e}")
+        return False, f"Error: {e}"
     finally:
         conn.close()
+
 
 def guardar_pedido_bd(id_proveedor, lista_productos):
     conn = conectar()

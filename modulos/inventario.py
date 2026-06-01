@@ -99,19 +99,28 @@ class Inventario(tk.Frame):
         else:
             articulos = ctrl.obtener_articulos()
 
+        if not articulos:
+            return
+
         for row_idx, art in enumerate(articulos, start=1):
             color_fila = "#E1EBF0" if row_idx % 2 == 0 else "#F4F8FA"
-
-            id_art, nombre, costo, precio, stock, perecedero, vencimiento = art
+            
+            id_art = art[0] if len(art) > 0 else None
+            nombre = art[1] if len(art) > 1 else "Sin Nombre"
+            costo = art[2] if len(art) > 2 else 0.0
+            precio = art[3] if len(art) > 3 else 0.0
+            stock = art[4] if len(art) > 4 else 0
+            perecedero = art[5] if len(art) > 5 else 0
+            vencimiento = art[6] if len(art) > 6 else None
 
             if perecedero == 1:
                 texto_vence = vencimiento if vencimiento else "Sin Fecha"
-                color_letras = "#D32F2F" 
+                color_letras = "#D32F2F"
             else:
                 texto_vence = "No Aplica"
-                color_letras = "black" 
+                color_letras = "black"
 
-            valores_fila = [id_art, nombre, f"${costo:,.2f}", f"${precio:,.2f}", stock, texto_vence]
+            valores_fila = [id_art, nombre, f"${float(costo):.2f}", f"${float(precio):.2f}", stock, texto_vence]
 
             for col_idx, valor in enumerate(valores_fila):
                 lbl_dato = tk.Label(
@@ -127,23 +136,23 @@ class Inventario(tk.Frame):
                 )
                 lbl_dato.grid(row=row_idx, column=col_idx, sticky="nsew")
 
-            btn_eliminar= tk.Button(
+            btn_eliminar = tk.Button(
                 self.scrollbar_frame,
-                text= "Borrar",
+                text="Borrar",
                 bg="#F44336",
                 fg="white",
-                font= ("arial", 11, "bold"),
+                font=("arial", 11, "bold"),
                 cursor="hand2",
                 command=lambda id_a=id_art, nom=nombre: self.borrar_articulo(id_a, nom)
             )
-            btn_eliminar.grid(row=row_idx, column=6, sticky ="nsew", padx=5, pady=2)
+            btn_eliminar.grid(row=row_idx, column=6, sticky="nsew", padx=5, pady=2)
 
         self.scrollbar_frame.grid_columnconfigure(0, weight=1)
-        self.scrollbar_frame.grid_columnconfigure(1, weight=5) 
-        self.scrollbar_frame.grid_columnconfigure(2, weight=2) 
-        self.scrollbar_frame.grid_columnconfigure(3, weight=2) 
-        self.scrollbar_frame.grid_columnconfigure(4, weight=2) 
-        self.scrollbar_frame.grid_columnconfigure(5, weight=3) 
+        self.scrollbar_frame.grid_columnconfigure(1, weight=5)
+        self.scrollbar_frame.grid_columnconfigure(2, weight=2)
+        self.scrollbar_frame.grid_columnconfigure(3, weight=2)
+        self.scrollbar_frame.grid_columnconfigure(4, weight=2)
+        self.scrollbar_frame.grid_columnconfigure(5, weight=3)
         self.scrollbar_frame.grid_columnconfigure(6, weight=1)
 
         self.scrollbar_frame.update_idletasks()
@@ -180,11 +189,14 @@ class Inventario(tk.Frame):
     def borrar_articulo(self, id_articulo, nombre_articulo):
         respuesta = messagebox.askyesno(
             "Confirmar Eliminación",
-            f"¿Estás seguro de que deseas eliminar permanenteme el artículo '{nombre_articulo}'?\nEsta acción no se puede deshacer."
+            f"¿Estás seguro de que deseas eliminar permanentemente el artículo '{nombre_articulo}'?\nEsta acción no se puede deshacer."
         )
         if respuesta:
             try:
                 ctrl.eliminar_articulo(id_articulo)
-                messagebox.showinfo(f"{nombre_articulo} ha sido eliminado")
+                messagebox.showinfo("Eliminado", f"{nombre_articulo} ha sido eliminado")
+                
+                self.cargar_articulos()   
+                
             except Exception as e:
                 messagebox.showerror("Error", f"{nombre_articulo} no se pudo eliminar:\n{e}")

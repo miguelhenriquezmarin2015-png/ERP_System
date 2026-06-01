@@ -148,92 +148,198 @@ class Proveedor(tk.Frame):
             messagebox.showerror("Error", mensaje)
 
     def ver_catalogo_articulos(self, datos_proveedor):
-        try:
-            id_prov = datos_proveedor[0]
-            nombre_prov = datos_proveedor[1]
-        except (TypeError, IndexError):
-            id_prov = datos_proveedor
-            nombre_prov = "Proveedor"
-
-        control_edicion = {"id_articulo": None}
+        id_prov = datos_proveedor[0]
+        nombre_prov = datos_proveedor[1]
 
         top_cat = tk.Toplevel(self)
-        top_cat.title(f"Catálogo Autónomo - {nombre_prov}")
-        top_cat.geometry("900x500+320+120")
-        top_cat.config(bg="#C6D9E3")
+        top_cat.title(f"Catálogo del Proveedor: {nombre_prov}")
+        top_cat.geometry("1100x550")
+        top_cat.resizable(False, False)
         top_cat.grab_set()
 
-        frame_add = tk.LabelFrame(top_cat, text="Añadir Artículo al Negocio", font="arial 11 bold", bg="#C6D9E3")
-        frame_add.place(x=10, y=10, width=260, height=480)
+        top_cat.controller = self.controller
+        control_edicion = {"id_articulo": None}
 
-        tk.Label(frame_add, text="Nombre Producto:", font="arial 10 bold", bg="#C6D9E3").place(x=10, y=10)
-        ent_nom = tk.Entry(frame_add, font="arial 11")
-        ent_nom.place(x=10, y=35, width=230, height=28)
+        frame_tabla_sub = tk.LabelFrame(top_cat, text="Artículos en Catálogo", font=("arial", 11, "bold"))
+        frame_tabla_sub.place(x=320, y=10, width=760, height=520)
 
-        tk.Label(frame_add, text="Costo Prov ($):", font="arial 10 bold", bg="#C6D9E3").place(x=10, y=80)
-        ent_cos = tk.Entry(frame_add, font="arial 11")
-        ent_cos.place(x=10, y=105, width=230, height=28)
-
-        tk.Label(frame_add, text="Precio Venta ($):", font="arial 10 bold", bg="#C6D9E3").place(x=10, y=150)
-        ent_pre = tk.Entry(frame_add, font="arial 11")
-        ent_pre.place(x=10, y=175, width=230, height=28)
-
-        frame_tabla_base = tk.Frame(top_cat, bg="#C6D9E3")
-        frame_tabla_base.place(x=280, y=15, width=600, height=470)
-
-        canvas_sub = tk.Canvas(frame_tabla_base, bg="#C6D9E3", highlightthickness=0)
-        scroll_sub = tk.Scrollbar(frame_tabla_base, orient="vertical", command=canvas_sub.yview)
-        frame_grid_sub = tk.Frame(canvas_sub, bg="#C6D9E3")
+        canvas_sub = tk.Canvas(frame_tabla_sub, bg="white", highlightthickness=0)
+        scrollbar_sub = ttk.Scrollbar(frame_tabla_sub, orient="vertical", command=canvas_sub.yview)
+        frame_grid_sub = tk.Frame(canvas_sub, bg="white")
 
         frame_grid_sub.bind("<Configure>", lambda e: canvas_sub.configure(scrollregion=canvas_sub.bbox("all")))
-        canvas_sub.create_window((0, 0), window=frame_grid_sub, anchor="nw", width=565)
-        canvas_sub.configure(yscrollcommand=scroll_sub.set)
-        canvas_sub.place(x=0, y=0, width=565, height=470)
-        scroll_sub.place(x=565, y=0, width=25, height=470)
+        canvas_sub.create_window((0, 0), window=frame_grid_sub, anchor="nw")
+        canvas_sub.configure(yscrollcommand=scrollbar_sub.set)
+
+        canvas_sub.place(x=10, y=10, width=720, height=480)
+        scrollbar_sub.place(x=735, y=10, width=15, height=480)
 
         def refrescar_subtabla():
-            for w in frame_grid_sub.winfo_children():
-                w.destroy()
+            for widget in frame_grid_sub.winfo_children():
+                widget.destroy()
 
-            headers_cat = ["ID", "Producto / Artículo", "Costo", "P. Venta", "Stock", "Acción"]
-            for c_idx, text in enumerate(headers_cat):
-                tk.Label(
-                    frame_grid_sub, text=text, font=("arial", 12, "bold"), 
-                    bg="#9FB8C7", relief="groove", padx=5, pady=5
-                ).grid(row=0, column=c_idx, sticky="nsew")
+            headers = ["ID", "Nombre", "Costo", "Precio", "Stock", "Vencimiento", "Acciones"]
+            for col_idx, h_text in enumerate(headers):
+                lbl = tk.Label(frame_grid_sub, text=h_text, font=("arial", 10, "bold"), relief="groove", padx=5, pady=5)
+                lbl.grid(row=0, column=col_idx, sticky="nsew")
 
             productos = ctrl.obtener_catalogo_por_proveedor(id_prov)
+            if not productos:
+                return
+
             for r_idx, prod in enumerate(productos, start=1):
-                id_p, n_p, c_p, p_p, s_p = prod
-                c_fila = "#E1EBF0" if r_idx % 2 == 0 else "#F4F4F4"
+                color_f = "#F5F5F5" if r_idx % 2 == 0 else "white"
+                
+                id_p = prod[0] if len(prod) > 0 else None
+                nom = prod[1] if len(prod) > 1 else "Sin Nombre"
+                cos = prod[2] if len(prod) > 2 else 0.0
+                pre = prod[3] if len(prod) > 3 else 0.0
+                stk = prod[4] if len(prod) > 4 else 0
+                per = prod[5] if len(prod) > 5 else 0
+                venc = prod[6] if len(prod) > 6 else None
 
-                valores_p = [id_p, n_p, f"${c_p:.2f}", f"${p_p:.2f}", s_p]
-                for c_idx, val in enumerate(valores_p):
-                    anchor_val = "w" if c_idx == 1 else "center"
-                    tk.Label(
-                        frame_grid_sub, text=val, font=("arial", 11), bg=c_fila, 
-                        relief="groove", anchor=anchor_val
-                    ).grid(row=r_idx, column=c_idx, sticky="nsew")
+                venc_text = venc if (per == 1 and venc) else ("Sin Fecha" if per == 1 else "No Aplica")
 
-                def preparar_edicion(ip=id_p, nom=n_p, cos=c_p, pre=p_p):
-                    control_edicion["id_articulo"] = ip
-                    ent_nom.delete(0, tk.END)
-                    ent_nom.insert(0, nom)
-                    ent_cos.delete(0, tk.END)
-                    ent_cos.insert(0, str(cos))
-                    ent_pre.delete(0, tk.END)
-                    ent_pre.insert(0, str(pre))
-                    btn_guardar.config(text="Actualizar Artículo", bg="#FF9800")
+                valores = [id_p, nom, f"${float(cos):.2f}", f"${float(pre):.2f}", stk, venc_text]
+                for c_idx, val in enumerate(valores):
+                    lbl_d = tk.Label(frame_grid_sub, text=val, font=("arial", 10), bg=color_f, relief="groove", padx=5, pady=5)
+                    lbl_d.grid(row=r_idx, column=c_idx, sticky="nsew")
 
-                btn_edit = tk.Button(
-                    frame_grid_sub, text="Modificar", bg=c_fila, font=("arial", 10),
-                    bd=1, relief="groove", cursor="hand2", command=preparar_edicion
+                btn_ed = tk.Button(
+                    frame_grid_sub, text="Editar", bg="#2196F3", fg="white", font=("arial", 9, "bold"),
+                    command=lambda p=prod: preparar_edicion(p)
                 )
-                btn_edit.grid(row=r_idx, column=5, sticky="nsew", padx=2, pady=1)
+                btn_ed.grid(row=r_idx, column=6, sticky="nsew", padx=2, pady=2)
 
-            # Configurar anchos de columna (ahora son 6 columnas: de la 0 a la 5)
-            for i in range(6):
-                frame_grid_sub.grid_columnconfigure(i, weight=1 if i != 1 else 2)
+            frame_grid_sub.update_idletasks()
+            canvas_sub.configure(scrollregion=canvas_sub.bbox("all"))
+
+        frame_add = tk.LabelFrame(top_cat, text="Gestionar Artículo", font=("arial", 11, "bold"))
+        frame_add.place(x=10, y=10, width=300, height=520)
+
+        tk.Label(frame_add, text="Nombre del Producto:", font=("arial", 10)).place(x=10, y=10)
+        ent_nom = tk.Entry(frame_add, font=("arial", 10))
+        ent_nom.place(x=10, y=30, width=260)
+
+        tk.Label(frame_add, text="Costo de Compra ($):", font=("arial", 10)).place(x=10, y=60)
+        ent_cos = tk.Entry(frame_add, font=("arial", 10))
+        ent_cos.place(x=10, y=80, width=260)
+
+        tk.Label(frame_add, text="Precio de Venta ($):", font=("arial", 10)).place(x=10, y=110)
+        ent_pre = tk.Entry(frame_add, font=("arial", 10))
+        ent_pre.place(x=10, y=130, width=260)
+
+        tk.Label(frame_add, text="¿Es Perecedero?", font=("arial", 10)).place(x=10, y=160)
+        combo_per = ttk.Combobox(frame_add, values=["No", "Sí"], font=("arial", 10), state="readonly")
+        combo_per.set("No")
+        combo_per.place(x=10, y=180, width=260)
+
+        tk.Label(frame_add, text="Vencimiento (AAAA-MM-DD):", font=("arial", 10)).place(x=10, y=210)
+        ent_vence = tk.Entry(frame_add, font=("arial", 10), state="disabled", bg="#E0E0E0")
+        ent_vence.insert(0, "No Aplica")
+        ent_vence.place(x=10, y=230, width=260)
+
+        def alternar_fecha(event):
+            if combo_per.get() == "Sí":
+                ent_vence.config(state="normal", bg="white")
+                if ent_vence.get() == "No Aplica":
+                    ent_vence.delete(0, tk.END)
+            else:
+                ent_vence.delete(0, tk.END)
+                ent_vence.insert(0, "No Aplica")
+                ent_vence.config(state="disabled", bg="#E0E0E0")
+
+        combo_per.bind("<<ComboboxSelected>>", alternar_fecha)
+
+        def ejecutar_guardado_articulo():
+            n = ent_nom.get().strip()
+            c_str = ent_cos.get().strip()
+            p_str = ent_pre.get().strip()
+            per_txt = combo_per.get()
+            v_txt = ent_vence.get().strip()
+
+            if not n or not c_str or not p_str:
+                messagebox.showerror("Error", "Completa los datos del artículo.", parent=top_cat)
+                return
+
+            try:
+                c = float(c_str)
+                p = float(p_str)
+            except ValueError:
+                messagebox.showerror("Error", "Costo y precio deben ser valores numéricos.", parent=top_cat)
+                return
+
+            per_val = 1 if per_txt == "Sí" else 0
+            v_val = None if (v_txt == "No Aplica" or v_txt == "") else v_txt
+
+            if control_edicion["id_articulo"] is None:
+                exito, msg = ctrl.agregar_producto_a_catalogo(id_prov, n, c, p, per_val, v_val)
+            else:
+                exito, msg = ctrl.actualizar_articulo_catalogo(control_edicion["id_articulo"], n, c, p, per_val, v_val)
+
+            if exito:
+                messagebox.showinfo("Éxito", msg, parent=top_cat)
+                ent_nom.delete(0, tk.END)
+                ent_cos.delete(0, tk.END)
+                ent_pre.delete(0, tk.END)
+                combo_per.set("No")
+                alternar_fecha(None)
+
+                if control_edicion["id_articulo"] is not None:
+                    control_edicion["id_articulo"] = None
+                    btn_guardar.config(text="Guardar en Catálogo", bg="#2196F3")
+
+                refrescar_subtabla()
+
+                def hilo_refresco_inventario():
+                    try:
+                        pantalla_inventario = None
+                        for llave, instancia_frame in top_cat.controller.frames.items():
+                            if "inventario" in instancia_frame.__class__.__name__.lower():
+                                pantalla_inventario = instancia_frame
+                                break
+                        if pantalla_inventario and hasattr(pantalla_inventario, 'cargar_articulos'):
+                            pantalla_inventario.cargar_articulos()
+                    except Exception as e:
+                        print(f"Aviso silencioso: {e}")
+
+                top_cat.after(10, hilo_refresco_inventario)
+            else:
+                messagebox.showerror("Error", msg, parent=top_cat)
+
+        def preparar_edicion(prod):
+            id_p = prod[0] if len(prod) > 0 else None
+            nom = prod[1] if len(prod) > 1 else ""
+            cos = prod[2] if len(prod) > 2 else 0.0
+            pre = prod[3] if len(prod) > 3 else 0.0
+            stk = prod[4] if len(prod) > 4 else 0
+            per = prod[5] if len(prod) > 5 else 0
+            venc = prod[6] if len(prod) > 6 else None
+
+            control_edicion["id_articulo"] = id_p
+            
+            ent_nom.delete(0, tk.END)
+            ent_nom.insert(0, nom)
+            ent_cos.delete(0, tk.END)
+            ent_cos.insert(0, str(cos))
+            ent_pre.delete(0, tk.END)
+            ent_pre.insert(0, str(pre))
+            
+            combo_per.set("Sí" if per == 1 else "No")
+            alternar_fecha(None)
+            if per == 1 and venc:
+                ent_vence.delete(0, tk.END)
+                ent_vence.insert(0, str(venc))
+
+            btn_guardar.config(text="Actualizar Artículo", bg="#FF9800")
+
+        btn_guardar = tk.Button(
+            frame_add, text="Guardar en Catálogo", bg="#4CAF50", fg="white",
+            font=("arial", 10, "bold"), command=ejecutar_guardado_articulo
+        )
+        btn_guardar.place(x=10, y=280, width=260, height=35)
+
+        refrescar_subtabla()
 
         def ejecutar_guardado_articulo():
             n = ent_nom.get().strip()
@@ -261,20 +367,30 @@ class Proveedor(tk.Frame):
                 ent_nom.delete(0, tk.END)
                 ent_cos.delete(0, tk.END)
                 ent_pre.delete(0, tk.END)
-                
+
                 if control_edicion["id_articulo"] is not None:
                     control_edicion["id_articulo"] = None
                     btn_guardar.config(text="Guardar en Catálogo", bg="#2196F3")
-                    
+
                 refrescar_subtabla()
+
+                def hilo_refresco_inventario():
+                    try:
+                        pantalla_inventario = None
+                        for llave, instancia_frame in self.controller.frames.items():
+                            if "inventario" in instancia_frame.__class__.__name__.lower():
+                                pantalla_inventario = instancia_frame
+                                break
+                        
+                        if pantalla_inventario and hasattr(pantalla_inventario, 'cargar_articulos'):
+                            pantalla_inventario.cargar_articulos()
+                    except Exception as e:
+                        print(f"Aviso silencioso de refresco: {e}")
+
+                top_cat.after(10, hilo_refresco_inventario)
+                    
             else:
                 messagebox.showerror("Error", msg, parent=top_cat)
-
-        btn_guardar = tk.Button(
-            frame_add, text="Guardar en Catálogo", bg="#2196F3", fg="white", 
-            font="arial 10 bold", command=ejecutar_guardado_articulo
-        )
-        btn_guardar.place(x=10, y=220, width=230, height=35)
 
         refrescar_subtabla()
 
