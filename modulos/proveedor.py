@@ -148,9 +148,10 @@ class Proveedor(tk.Frame):
             messagebox.showerror("Error", mensaje)
 
     def ver_catalogo_articulos(self, datos_proveedor):
-        id_prov = datos_proveedor[0]
-        nombre_prov = datos_proveedor[1]
+        id_prov = datos_proveedor
+        nombre_prov = datos_proveedor
 
+        # Crear ventana flotante
         top_cat = tk.Toplevel(self)
         top_cat.title(f"Catálogo del Proveedor: {nombre_prov}")
         top_cat.geometry("1100x550")
@@ -160,6 +161,9 @@ class Proveedor(tk.Frame):
         top_cat.controller = self.controller
         control_edicion = {"id_articulo": None}
 
+        # -----------------------------------------------------------------
+        # PANEL DERECHO: Subtabla para mostrar el catálogo actual
+        # -----------------------------------------------------------------
         frame_tabla_sub = tk.LabelFrame(top_cat, text="Artículos en Catálogo", font=("arial", 11, "bold"))
         frame_tabla_sub.place(x=320, y=10, width=760, height=520)
 
@@ -211,9 +215,22 @@ class Proveedor(tk.Frame):
                 )
                 btn_ed.grid(row=r_idx, column=6, sticky="nsew", padx=2, pady=2)
 
+            # Configuración de pesos para que se estiren las columnas proporcionalmente
+            frame_grid_sub.grid_columnconfigure(0, weight=1)  # ID
+            frame_grid_sub.grid_columnconfigure(1, weight=4)  # Nombre
+            frame_grid_sub.grid_columnconfigure(2, weight=2)  # Costo
+            frame_grid_sub.grid_columnconfigure(3, weight=2)  # Precio
+            frame_grid_sub.grid_columnconfigure(4, weight=1)  # Stock
+            frame_grid_sub.grid_columnconfigure(5, weight=3)  # Vencimiento
+            frame_grid_sub.grid_columnconfigure(6, weight=2)  # Acciones
+
+            # Forzar la actualización visual del contenedor interno
             frame_grid_sub.update_idletasks()
             canvas_sub.configure(scrollregion=canvas_sub.bbox("all"))
 
+        # -----------------------------------------------------------------
+        # PANEL IZQUIERDO: Formulario de Registro / Edición
+        # -----------------------------------------------------------------
         frame_add = tk.LabelFrame(top_cat, text="Gestionar Artículo", font=("arial", 11, "bold"))
         frame_add.place(x=10, y=10, width=300, height=520)
 
@@ -239,6 +256,7 @@ class Proveedor(tk.Frame):
         ent_vence.insert(0, "No Aplica")
         ent_vence.place(x=10, y=230, width=260)
 
+        # Alternar estado del campo de fecha según la opción perecedero
         def alternar_fecha(event):
             if combo_per.get() == "Sí":
                 ent_vence.config(state="normal", bg="white")
@@ -251,6 +269,7 @@ class Proveedor(tk.Frame):
 
         combo_per.bind("<<ComboboxSelected>>", alternar_fecha)
 
+        # Lógica del botón de guardado
         def ejecutar_guardado_articulo():
             n = ent_nom.get().strip()
             c_str = ent_cos.get().strip()
@@ -291,6 +310,7 @@ class Proveedor(tk.Frame):
 
                 refrescar_subtabla()
 
+                # Hilo de refresco para el inventario de fondo
                 def hilo_refresco_inventario():
                     try:
                         pantalla_inventario = None
@@ -333,64 +353,12 @@ class Proveedor(tk.Frame):
 
             btn_guardar.config(text="Actualizar Artículo", bg="#FF9800")
 
+        # Botón único con su color original
         btn_guardar = tk.Button(
-            frame_add, text="Guardar en Catálogo", bg="#4CAF50", fg="white",
+            frame_add, text="Guardar en Catálogo", bg="#2196F3", fg="white",
             font=("arial", 10, "bold"), command=ejecutar_guardado_articulo
         )
         btn_guardar.place(x=10, y=280, width=260, height=35)
-
-        refrescar_subtabla()
-
-        def ejecutar_guardado_articulo():
-            n = ent_nom.get().strip()
-            c_str = ent_cos.get().strip()
-            p_str = ent_pre.get().strip()
-
-            if not n or not c_str or not p_str:
-                messagebox.showerror("Error", "Completa los datos del artículo.", parent=top_cat)
-                return
-
-            try:
-                c = float(c_str)
-                p = float(p_str)
-            except ValueError:
-                messagebox.showerror("Error", "Costo y precio deben ser valores numéricos.", parent=top_cat)
-                return
-
-            if control_edicion["id_articulo"] is None:
-                exito, msg = ctrl.agregar_producto_a_catalogo(id_prov, n, c, p)
-            else:
-                exito, msg = ctrl.actualizar_articulo_catalogo(control_edicion["id_articulo"], n, c, p)
-
-            if exito:
-                messagebox.showinfo("Éxito", msg, parent=top_cat)
-                ent_nom.delete(0, tk.END)
-                ent_cos.delete(0, tk.END)
-                ent_pre.delete(0, tk.END)
-
-                if control_edicion["id_articulo"] is not None:
-                    control_edicion["id_articulo"] = None
-                    btn_guardar.config(text="Guardar en Catálogo", bg="#2196F3")
-
-                refrescar_subtabla()
-
-                def hilo_refresco_inventario():
-                    try:
-                        pantalla_inventario = None
-                        for llave, instancia_frame in self.controller.frames.items():
-                            if "inventario" in instancia_frame.__class__.__name__.lower():
-                                pantalla_inventario = instancia_frame
-                                break
-                        
-                        if pantalla_inventario and hasattr(pantalla_inventario, 'cargar_articulos'):
-                            pantalla_inventario.cargar_articulos()
-                    except Exception as e:
-                        print(f"Aviso silencioso de refresco: {e}")
-
-                top_cat.after(10, hilo_refresco_inventario)
-                    
-            else:
-                messagebox.showerror("Error", msg, parent=top_cat)
 
         refrescar_subtabla()
 

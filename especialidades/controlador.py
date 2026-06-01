@@ -703,14 +703,23 @@ def obtener_catalogo_por_proveedor(id_proveedor):
     conn = conectar()
     cursor = conn.cursor()
     try:
+        # 🚀 CORRECCIÓN CRÍTICA: Si 'id_proveedor' viene como una tupla (ej: (1, 'kevin')), 
+        # extraemos únicamente el ID numérico de la posición 0 para que MySQL no lance error.
+        if isinstance(id_proveedor, tuple):
+            id_real = id_proveedor[0]
+        else:
+            id_real = id_proveedor
+
+        # Ejecutamos el query relacional exacto usando el ID limpio
         query = """
             SELECT pc.id_producto, i.nombre, i.costo, i.precio, i.stock, i.perecedero, i.vencimiento
             FROM proveedor_catalogo pc
             INNER JOIN inventario i ON pc.id_producto = i.id
             WHERE pc.id_proveedor = %s;
         """
-        cursor.execute(query, (id_proveedor,))
+        cursor.execute(query, (id_real,))
         return cursor.fetchall()
+        
     except Exception as e:
         print(f"Error en ctrl.obtener_catalogo_por_proveedor: {e}")
         return []
@@ -811,7 +820,6 @@ def actualizar_articulo_catalogo(id_producto, nombre, costo, precio, perecedero,
         return False, f"Error: {e}"
     finally:
         conn.close()
-
 
 def guardar_pedido_bd(id_proveedor, lista_productos):
     conn = conectar()
