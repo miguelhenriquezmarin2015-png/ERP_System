@@ -31,9 +31,25 @@ class Container(tk.Frame):
         controller.protocol("WM_DELETE_WINDOW", self.al_cerrar_programa)
         
     def show_frames(self, ventas_clase):
-        frame=self.frames[ventas_clase]
-        frame.tkraise()
+        instancia_clientes = self.frames.get(Clientes)
+        if instancia_clientes: instancia_clientes.limpiar_formulario_cliente()
         
+        instancia_proveedor = self.frames.get(Proveedor)
+        if instancia_proveedor: instancia_proveedor.limpiar_formulario_proveedor()
+        
+        instancia_pedidos = self.frames.get(Pedidos)
+        if instancia_pedidos: instancia_pedidos.limpiar_formulario_pedidos()
+        
+        instancia_inventario = self.frames.get(Inventario)
+        if instancia_inventario: instancia_inventario.limpiar_formulario_inventario()
+        
+        instancia_info = self.frames.get(Informacion)
+        if instancia_info:
+            instancia_info.limpiar_informacion()
+            
+        frame = self.frames[ventas_clase]
+        frame.tkraise()
+
     def al_cerrar_programa(self):
         instancia_ventas = self.frames.get(Ventas)
         if instancia_ventas:

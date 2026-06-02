@@ -10,7 +10,16 @@ class Pedidos(tk.Frame):
         self.controller=controller
         self.lbl_total_orden = None
         self.widgets()
-        
+        self.bind("<FocusIn>", self.al_recuperar_foco)
+
+    def al_recuperar_foco(self, event=None):
+        if event and event.widget != self:
+            return
+            
+        if hasattr(self, 'todos_los_proveedores'):
+            del self.todos_los_proveedores
+
+        self.cargar_proveedores()
 
     def cargar_proveedores(self, event=None):
         proveedores=ctrl.obtener_nombres_proveedores()
@@ -19,8 +28,7 @@ class Pedidos(tk.Frame):
     def filtrar_proveedores(self, event=None):
         texto_buscado = self.entry_proveedor.get().lower().strip()
         
-        if not hasattr(self, 'todos_los_proveedores') or not self.todos_los_proveedores:
-            self.todos_los_proveedores = ctrl.obtener_nombres_proveedores()
+        self.todos_los_proveedores = ctrl.obtener_nombres_proveedores()
         
         if texto_buscado == "":
             self.entry_proveedor['values'] = self.todos_los_proveedores
@@ -30,6 +38,16 @@ class Pedidos(tk.Frame):
                 if texto_buscado in str(prov).lower()
             ]
             self.entry_proveedor['values'] = proveedores_filtrados
+
+    def programar_filtrado(self, event=None):
+        if hasattr(self, '_timer_id') and self._timer_id:
+            self.after_cancel(self._timer_id)
+        
+        self._timer_id = self.after(1500, self.ejecutar_filtro_y_abrir)
+
+    def ejecutar_filtro_y_abrir(self):
+        self.filtrar_proveedores()
+        self.entry_proveedor.event_generate("<Down>")
 
     def widgets(self):
         
@@ -41,7 +59,7 @@ class Pedidos(tk.Frame):
         
         self.entry_proveedor = ttk.Combobox(labelframe, font="arial 14 bold")
         self.entry_proveedor.place(x=130, y=10, width=200, height=40)
-        self.entry_proveedor.bind("<KeyRelease>", lambda event: self.filtrar_proveedores())
+        self.entry_proveedor.bind("<KeyRelease>", self.programar_filtrado)
 
         tk.Label(labelframe, text="Formato Exportación:", font="arial 10 bold", bg="#C6D9E3").place(x=460, y=0)
         
@@ -83,8 +101,15 @@ class Pedidos(tk.Frame):
         )
         self.btn_confirmar.pack(side="right", padx=5, pady=5)
 
+        self.btn_limpiar = tk.Button(
+            frame_acciones_externo, text="Limpiar Selección",
+            font="arial 11 bold", bg="#f44336", fg="white", cursor="hand2", bd=0,
+            padx=15, pady=6, command=self.limpiar_formulario_pedidos
+        )
+        self.btn_limpiar.pack(side="right", padx=5, pady=5)
+
         self.entry_proveedor.bind("<<ComboboxSelected>>", self.cargar_catalogo_pedido)
-        self.entry_proveedor.bind("<KeyRelease>", self.filtrar_proveedores)
+        self.entry_proveedor.bind("<KeyRelease>", self.programar_filtrado)
         self.cargar_proveedores()
     
     def cargar_catalogo_pedido(self, event=None):
@@ -176,6 +201,19 @@ class Pedidos(tk.Frame):
             self.canvas.configure(scrollregion=self.canvas.bbox("all"))
             self.canvas.yview_moveto(0)
 
+    def limpiar_formulario_pedidos(self):
+        self.entry_proveedor.set("")
+        if hasattr(self, 'todos_los_proveedores'):
+            del self.todos_los_proveedores
+            
+        if hasattr(self, 'items_pedido'):
+            for entry in self.items_pedido.values():
+                entry["entry"].delete(0, tk.END)
+                entry["entry"].insert(0, "0")
+                
+        if hasattr(self, 'recalcular_total_pedido'):
+            self.recalcular_total_pedido()
+
     def procesar_y_exportar_pedido(self):
         proveedor_sel = self.entry_proveedor.get()
         if not proveedor_sel or "-" not in proveedor_sel:
@@ -252,6 +290,8 @@ class Pedidos(tk.Frame):
             messagebox.showerror("Error de Exportación", f"Pedido guardado en BD, pero falló la exportación: {e}")
 
     def recalcular_total_pedido(self):
+        if not hasattr(self, 'items_pedido') or self.items_pedido is None:
+            return 
         total_acumulado = 0.0
         for id_p, info in self.items_pedido.items():
             try:

@@ -53,6 +53,9 @@ class Proveedor(tk.Frame):
         self.boton_guardar = tk.Button(labelproveedor, text="Guardar", font="arial 14 bold", bg="#4CAF50", fg="white",command=self.guardar_nuevo_proveedor)
         self.boton_guardar.place(x=10, y=410, width=230, height=40)
 
+        self.boton_limpiar = tk.Button(labelproveedor, text="Limpiar", font="arial 14 bold", bg="#f44336", fg="white", command=self.limpiar_formulario_proveedor)
+        self.boton_limpiar.place(x=10, y=470, width=230, height=40)
+
         self.cargar_proveedores()
 
     def cargar_proveedores(self):
@@ -161,9 +164,6 @@ class Proveedor(tk.Frame):
         top_cat.controller = self.controller
         control_edicion = {"id_articulo": None}
 
-        # -----------------------------------------------------------------
-        # PANEL DERECHO: Subtabla para mostrar el catálogo actual
-        # -----------------------------------------------------------------
         frame_tabla_sub = tk.LabelFrame(top_cat, text="Artículos en Catálogo", font=("arial", 11, "bold"))
         frame_tabla_sub.place(x=320, y=10, width=760, height=520)
 
@@ -215,7 +215,6 @@ class Proveedor(tk.Frame):
                 )
                 btn_ed.grid(row=r_idx, column=6, sticky="nsew", padx=2, pady=2)
 
-            # Configuración de pesos para que se estiren las columnas proporcionalmente
             frame_grid_sub.grid_columnconfigure(0, weight=1)  # ID
             frame_grid_sub.grid_columnconfigure(1, weight=4)  # Nombre
             frame_grid_sub.grid_columnconfigure(2, weight=2)  # Costo
@@ -224,13 +223,9 @@ class Proveedor(tk.Frame):
             frame_grid_sub.grid_columnconfigure(5, weight=3)  # Vencimiento
             frame_grid_sub.grid_columnconfigure(6, weight=2)  # Acciones
 
-            # Forzar la actualización visual del contenedor interno
             frame_grid_sub.update_idletasks()
             canvas_sub.configure(scrollregion=canvas_sub.bbox("all"))
 
-        # -----------------------------------------------------------------
-        # PANEL IZQUIERDO: Formulario de Registro / Edición
-        # -----------------------------------------------------------------
         frame_add = tk.LabelFrame(top_cat, text="Gestionar Artículo", font=("arial", 11, "bold"))
         frame_add.place(x=10, y=10, width=300, height=520)
 
@@ -452,3 +447,11 @@ class Proveedor(tk.Frame):
         frame_grid.pack(padx=20, pady=20, fill="both", expand=True)
         
         refrescar_pedidos()
+
+    def limpiar_formulario_proveedor(self):
+        self.entry_nombre.delete(0, tk.END)
+        self.entry_rif.delete(0, tk.END)
+        self.entry_contacto.delete(0, tk.END)
+        
+        if hasattr(self, 'id_proveedor_seleccionado'):
+            self.id_proveedor_seleccionado = None

@@ -479,6 +479,40 @@ class Informacion(tk.Frame):
         else:
             self.boton_guardar.config(text="Guardar Información", bg="#4CAF50")
 
+    def limpiar_informacion(self):
+        
+        if hasattr(self, 'entry_user') and self.entry_user:
+            self.entry_user.delete(0, tk.END)
+        if hasattr(self, 'entry_pass') and self.entry_pass:
+            self.entry_pass.delete(0, tk.END)
+        if hasattr(self, 'entry_admin_nombre') and self.entry_admin_nombre:
+            self.entry_admin_nombre.delete(0, tk.END)
+        if hasattr(self, 'entry_admin_cedula') and self.entry_admin_cedula:
+            self.entry_admin_cedula.delete(0, tk.END)
+        if hasattr(self, 'entry_admin_telefono') and self.entry_admin_telefono:
+            self.entry_admin_telefono.delete(0, tk.END)
+        if hasattr(self, 'entry_admin_correo') and self.entry_admin_correo:
+            self.entry_admin_correo.delete(0, tk.END)
+
+        if hasattr(self, 'entry_nom') and self.entry_nom:
+            self.entry_nom.delete(0, tk.END)
+        if hasattr(self, 'entry_ci') and self.entry_ci:
+            self.entry_ci.delete(0, tk.END)
+        if hasattr(self, 'entry_tel') and self.entry_tel:
+            self.entry_tel.delete(0, tk.END)
+        if hasattr(self, 'entry_email') and self.entry_email:
+            self.entry_email.delete(0, tk.END)
+        if hasattr(self, 'entry_usu') and self.entry_usu:
+            self.entry_usu.delete(0, tk.END)
+        if hasattr(self, 'entry_passw') and self.entry_passw:
+            self.entry_passw.delete(0, tk.END)
+            
+        if hasattr(self, 'entry_sueldo') and self.entry_sueldo:
+            self.entry_sueldo.delete(0, tk.END)
+
+        if hasattr(self, 'combo_rol') and self.combo_rol:
+            self.combo_rol.current(0)
+
 def descargar_empleados(self):
     empleados = ctrl.obtener_empleados()
     
