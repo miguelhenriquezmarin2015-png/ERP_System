@@ -271,7 +271,7 @@ class Pedidos(tk.Frame):
                 ruta_pdf = ctrl.generar_orden_pedido_pdf(nombre_proveedor, productos_pedidos, total_general)
                 mensajes_rutas.append(f"• PDF: {ruta_pdf}")
 
-            if "csv" in formato or "Ambos" in formato:
+            if "CSV" in formato or "Ambos" in formato:
                 ruta_csv = ctrl.generar_csv_pedido(nombre_proveedor, productos_pedidos, total_general)
                 mensajes_rutas.append(f"• CSV: {ruta_csv}")
 

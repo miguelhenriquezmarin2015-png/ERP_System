@@ -76,7 +76,6 @@ def crear_base_de_datos():
             "CREATE TABLE IF NOT EXISTS proveedor_catalogo ( id_proveedor INT NOT NULL, id_producto INT NOT NULL, PRIMARY KEY(id_proveedor, id_producto), FOREIGN KEY(id_proveedor) REFERENCES proveedores(id) ON DELETE CASCADE, FOREIGN KEY(id_producto) REFERENCES inventario(id) ON DELETE CASCADE )",
             "CREATE TABLE IF NOT EXISTS compras_proveedor ( id INT AUTO_INCREMENT PRIMARY KEY, id_proveedor INT NOT NULL, fecha DATETIME NOT NULL, total_pagado DECIMAL(12,2) NOT NULL, detalles TEXT, FOREIGN KEY(id_proveedor) REFERENCES proveedores(id) ON DELETE CASCADE )",
             "CREATE TABLE IF NOT EXISTS pedidos_pendientes ( id INT AUTO_INCREMENT PRIMARY KEY, id_proveedor INT NOT NULL, producto VARCHAR(255) NOT NULL, cantidad INT NOT NULL, monto_estimado DECIMAL(12,2) NOT NULL, estado VARCHAR(50) NOT NULL DEFAULT 'Pendiente', FOREIGN KEY(id_proveedor) REFERENCES proveedores(id) ON DELETE CASCADE )",
-            "CREATE TABLE IF NOT EXISTS pedidos_pendientes ( id INT AUTO_INCREMENT PRIMARY KEY, id_proveedor INT NOT NULL, producto VARCHAR(255) NOT NULL, cantidad INT NOT NULL, monto_estimado DECIMAL(12,2) NOT NULL, estado VARCHAR(50) NOT NULL DEFAULT 'Pendiente', FOREIGN KEY(id_proveedor) REFERENCES proveedores(id) ON DELETE CASCADE )",
             "CREATE TABLE IF NOT EXISTS fondos ( id INT AUTO_INCREMENT PRIMARY KEY, nombre VARCHAR(100) NOT NULL UNIQUE, saldo DECIMAL(12,2) NOT NULL DEFAULT 0.0 )",
             "CREATE TABLE IF NOT EXISTS egresos ( id INT AUTO_INCREMENT PRIMARY KEY, descripcion VARCHAR(255) NOT NULL, monto DECIMAL(12,2) NOT NULL, fecha DATETIME NOT NULL, id_fondo INT, FOREIGN KEY(id_fondo) REFERENCES fondos(id) )"
         ]
@@ -759,56 +758,6 @@ def obtener_pedidos_pendientes(id_proveedor):
     finally:
         conn.close()
 
-def recibir_pedido_pendiente_db(id_pedido):
-    conn = conectar()
-    cursor = conn.cursor()
-    try:
-        query_select = "SELECT id_proveedor, monto_estimado, producto, cantidad FROM pedidos_pendientes WHERE id = %s;"
-        cursor.execute(query_select, (id_pedido,))
-        pedido = cursor.fetchone()
-        
-        if pedido:
-            id_prov, monto_estimado, producto, cantidad_recibida = pedido
-            nota_historial = f"Pedido Recibido: {producto}"
-            
-            query_insert = """
-                INSERT INTO compras_proveedor (id_proveedor, fecha, total_pagado, detalles) 
-                VALUES (%s, NOW(), %s, %s);
-            """
-            cursor.execute(query_insert, (id_prov, monto_estimado, nota_historial))
-            
-            query_buscar_inv = "SELECT stock FROM inventario WHERE nombre = %s;"
-            cursor.execute(query_buscar_inv, (producto,))
-            item_inventario = cursor.fetchone()
-            
-            if item_inventario:
-                stock_actual = item_inventario[0]
-                nuevo_stock = stock_actual + cantidad_recibida
-                query_update_inv = "UPDATE inventario SET stock = %s WHERE nombre = %s;"
-                cursor.execute(query_update_inv, (nuevo_stock, producto))
-            else:
-                costo_unitario = monto_estimado / cantidad_recibida if cantidad_recibida > 0 else 0
-                query_crear_inv = """
-                    INSERT INTO inventario (nombre, costo, precio, stock, perecedero, vencimiento) 
-                    VALUES (%s, %s, 0.00, %s, 0, NULL);
-                """
-                cursor.execute(query_crear_inv, (producto, costo_unitario, cantidad_recibida))
-            
-            query_delete = "DELETE FROM pedidos_pendientes WHERE id = %s;"
-            cursor.execute(query_delete, (id_pedido,))
-            
-            conn.commit()
-            return True
-            
-        return False
-        
-    except Exception as e:
-        conn.rollback()
-        print(f"Error en ctrl.recibir_pedido_pendiente_db con inventario: {e}")
-        return False
-    finally:
-        conn.close()
-
 def actualizar_articulo_catalogo(id_producto, nombre, costo, precio, perecedero, vencimiento):
     conn = conectar()
     cursor = conn.cursor()
@@ -1026,5 +975,56 @@ def obtener_saldo_fondo(nombre_fondo):
         return float(res[0]) if res else 0.0
     except Exception:
         return 0.0
+    finally:
+        conn.close()
+def obtener_precio_actual_producto(nombre_producto):
+    conn = conectar()
+    cursor = conn.cursor()
+    try:
+        cursor.execute("SELECT precio FROM inventario WHERE nombre = %s", (nombre_producto,))
+        res = cursor.fetchone()
+        return float(res[0]) if res and res[0] is not None else 0.0
+    except Exception:
+        return 0.0
+    finally:
+        conn.close()
+
+def procesar_recepcion_pedido(id_pedido, nombre_producto, cantidad_recibida, nuevo_precio, motivo_faltante):
+    conn = conectar()
+    cursor = conn.cursor()
+    try:
+        cursor.execute("SELECT id_proveedor, monto_estimado FROM pedidos_pendientes WHERE id = %s", (id_pedido,))
+        datos_pedido = cursor.fetchone()
+        if not datos_pedido:
+            return False, "No se encontró el pedido en la base de datos."
+
+        id_prov, monto_estimado = datos_pedido
+
+        nota_historial = f"Recepción de Pedido: {nombre_producto}"
+        if motivo_faltante:
+            nota_historial += f" (Faltante: {motivo_faltante})"
+
+        cursor.execute("INSERT INTO compras_proveedor (id_proveedor, fecha, total_pagado, detalles) VALUES (%s, NOW(), %s, %s)", 
+                       (id_prov, monto_estimado, nota_historial))
+
+        nuevo_estado = "Recibido"
+        if motivo_faltante:
+            estado_str = f"Incompleto ({motivo_faltante})"
+            nuevo_estado = estado_str[:50] 
+
+        cursor.execute("UPDATE pedidos_pendientes SET estado = %s WHERE id = %s", (nuevo_estado, id_pedido))
+
+        cursor.execute("SELECT stock FROM inventario WHERE nombre = %s", (nombre_producto,))
+        res = cursor.fetchone()
+        if res:
+            nuevo_stock = int(res[0]) + int(cantidad_recibida)
+            precio_seguro = float(nuevo_precio)
+            cursor.execute("UPDATE inventario SET stock = %s, precio = %s WHERE nombre = %s", (nuevo_stock, precio_seguro, nombre_producto))
+
+        conn.commit()
+        return True, "Recepción procesada, contabilizada en Finanzas e Inventario actualizado."
+    except Exception as e:
+        conn.rollback()
+        return False, f"Error al procesar recepción: {str(e)}"
     finally:
         conn.close()

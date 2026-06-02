@@ -8,6 +8,7 @@ class Proveedor(tk.Frame):
     def __init__(self, padre,controller):
         super().__init__(padre)
         self.controller=controller
+        self.id_proveedor_seleccionado=None
         self.widgets()
 
     def widgets(self):
@@ -51,10 +52,16 @@ class Proveedor(tk.Frame):
         self.entry_contacto.place(x=10, y=230, width=230, height=30)
 
         self.boton_guardar = tk.Button(labelproveedor, text="Guardar", font="arial 14 bold", bg="#4CAF50", fg="white",command=self.guardar_nuevo_proveedor)
-        self.boton_guardar.place(x=10, y=410, width=230, height=40)
+        self.boton_guardar.place(x=10, y=420, width=230, height=40)
+
+        self.boton_modificar = tk.Button(labelproveedor, text="Actualizar", font="arial 14 bold", bg="#2196F3", fg="white", command=self.modificar_proveedor_ui)
+        self.boton_modificar.place(x=10, y=310, width=230, height=40)
+
+        self.boton_eliminar = tk.Button(labelproveedor, text="Eliminar", font="arial 14 bold", bg="#F44336", fg="white", command=self.eliminar_proveedor_ui)
+        self.boton_eliminar.place(x=10, y=470, width=230, height=40)
 
         self.boton_limpiar = tk.Button(labelproveedor, text="Limpiar", font="arial 14 bold", bg="#f44336", fg="white", command=self.limpiar_formulario_proveedor)
-        self.boton_limpiar.place(x=10, y=470, width=230, height=40)
+        self.boton_limpiar.place(x=10, y=360, width=230, height=40)
 
         self.cargar_proveedores()
 
@@ -100,6 +107,7 @@ class Proveedor(tk.Frame):
                     pady=5
                 )
                 lbl_dato.grid(row=row_idx, column=col_idx, sticky="nsew")
+                lbl_dato.bind("<Button-1>", lambda event, datos=prov: self.seleccionar_proveedor(datos))
 
             frame_acciones = tk.Frame(self.scrollbar_frame, bg=color_fila, relief="groove", bd=1)
             frame_acciones.grid(row=row_idx, column=4, sticky="nsew")
@@ -403,8 +411,8 @@ class Proveedor(tk.Frame):
             for col_idx, text in enumerate(headers):
                 tk.Label(frame_grid, text=text, font=("arial", 12, "bold"), bg="#9FB8C7", relief="groove", padx=5, pady=5).grid(row=0, column=col_idx, sticky="nsew")
 
-            pedidos = ctrl.obtener_pedidos_pendientes(int(id_proveedor))
-            
+            pedidos = ctrl.obtener_pedidos_pendientes(id_proveedor)
+
             if not pedidos:
                 tk.Label(frame_grid, text="No hay órdenes pendientes de entrega.", font=("arial", 12, "italic"), bg="#C6D9E3").grid(row=1, column=0, columnspan=5, pady=20)
                 return
@@ -418,36 +426,123 @@ class Proveedor(tk.Frame):
                     tk.Label(frame_grid, text=val, font=("arial", 11), bg=c_fila, relief="groove", anchor="w" if c_idx==1 else "center", padx=5, pady=4).grid(row=r_idx, column=c_idx, sticky="nsew")
 
                 btn_recibir = tk.Button(
-                    frame_grid, text="Recibido", bg="#4CAF50", fg="white", font=("arial", 9, "bold"), bd=0,
-                    command=lambda id_ped=id_p: marcar_como_recibido(id_ped)
+                    frame_grid, text="Recibir", bg="#4CAF50", fg="white", font=("arial", 9, "bold"), bd=0, cursor="hand2",
+                    command=lambda id_ped=id_p, prod=producto, cant=cantidad, mon=monto: abrir_recepcion(id_ped, prod, cant, mon)
                 )
                 btn_recibir.grid(row=r_idx, column=4, padx=5, pady=2)
 
             for i in range(5):
                 frame_grid.grid_columnconfigure(i, weight=1 if i!=1 else 2)
 
-        def marcar_como_recibido(id_ped):
-            if ctrl.recibir_pedido_pendiente_db(id_ped):
-                messagebox.showinfo("Éxito", "¡El pedido ha sido marcado como recibido correctamente!", parent=top_pedidos)
-                refrescar_pedidos() 
-                pantalla_inventario = None
-                for llave, instancia_frame in self.controller.frames.items():
-                    # Con __class__.__name__ obtenemos el nombre de la clase como texto (ej. "Inventario")
-                    if "inventario" in instancia_frame.__class__.__name__.lower():
-                        pantalla_inventario = instancia_frame
-                        break
-                
-                # Si la encuentra y tiene el método, fuerza la recarga de los artículos
-                if pantalla_inventario and hasattr(pantalla_inventario, 'cargar_articulos'):
-                    pantalla_inventario.cargar_articulos()
-            else:
-                messagebox.showerror("Error", "No se pudo actualizar el estado del pedido.", parent=top_pedidos)
+        def abrir_recepcion(id_ped, producto, cantidad_esperada, monto_estimado):
+            top_rec = tk.Toplevel(top_pedidos)
+            top_rec.title(f"Recepción: {producto}")
+            top_rec.geometry("400x500+400+100")
+            top_rec.config(bg="#f4f4f4")
+            top_rec.grab_set()
+
+            costo_unitario = float(monto_estimado) / int(cantidad_esperada)
+            precio_actual = ctrl.obtener_precio_actual_producto(producto)
+
+            tk.Label(top_rec, text="Confirmación de Llegada", font=("arial", 14, "bold"), bg="#f4f4f4").pack(pady=10)
+
+            info_frame = tk.Frame(top_rec, bg="#f4f4f4")
+            info_frame.pack(fill="x", padx=20)
+            tk.Label(info_frame, text=f"Producto: {producto}", font=("arial", 11), bg="#f4f4f4").pack(anchor="w")
+            tk.Label(info_frame, text=f"Cantidad Esperada: {cantidad_esperada}", font=("arial", 11), bg="#f4f4f4").pack(anchor="w")
+            tk.Label(info_frame, text=f"Costo Unitario Pago: ${costo_unitario:.2f}", font=("arial", 11, "bold"), fg="#D32F2F", bg="#f4f4f4").pack(anchor="w")
+
+            tk.Label(top_rec, text="Cantidad Recibida Real:", font=("arial", 10, "bold"), bg="#f4f4f4").pack(anchor="w", padx=20, pady=(15,0))
+            ent_cant = tk.Entry(top_rec, font=("arial", 12))
+            ent_cant.insert(0, str(cantidad_esperada))
+            ent_cant.pack(fill="x", padx=20)
+
+            tk.Label(top_rec, text="Motivo del Faltante (Solo si llegó menos):", font=("arial", 10, "bold"), bg="#f4f4f4").pack(anchor="w", padx=20, pady=(15,0))
+            ent_motivo = tk.Entry(top_rec, font=("arial", 12))
+            ent_motivo.pack(fill="x", padx=20)
+
+            tk.Label(top_rec, text="Fijar Precio de Venta Público ($):", font=("arial", 10, "bold"), bg="#f4f4f4").pack(anchor="w", padx=20, pady=(15,0))
+            ent_precio = tk.Entry(top_rec, font=("arial", 12))
+            if precio_actual > 0:
+                ent_precio.insert(0, str(precio_actual))
+            ent_precio.pack(fill="x", padx=20)
+
+            def procesar():
+                try:
+                    cant_recibida = int(ent_cant.get())
+                    nuevo_precio = float(ent_precio.get())
+                except ValueError:
+                    messagebox.showerror("Error", "Cantidad y precio deben ser numéricos.", parent=top_rec)
+                    return
+
+                motivo = ent_motivo.get().strip()
+                if cant_recibida < cantidad_esperada and not motivo:
+                    messagebox.showerror("Error", "Debe especificar un motivo si llegó menos cantidad.", parent=top_rec)
+                    return
+
+                exito, msj = ctrl.procesar_recepcion_pedido(id_ped, producto, cant_recibida, nuevo_precio, motivo)
+                if exito:
+                    messagebox.showinfo("Ingreso Confirmado", msj, parent=top_rec)
+                    top_rec.destroy()
+                    refrescar_pedidos()
+                    for llave, inst in self.controller.frames.items():
+                        if "inventario" in inst.__class__.__name__.lower() and hasattr(inst, 'cargar_articulos'):
+                            inst.cargar_articulos()
+                else:
+                    messagebox.showerror("Error", msj, parent=top_rec)
+
+            tk.Button(top_rec, text="✔ Ingresar al Inventario", bg="#4CAF50", fg="white", font=("arial", 12, "bold"), cursor="hand2", command=procesar).pack(pady=25)
 
         frame_grid = tk.Frame(top_pedidos, bg="#C6D9E3")
         frame_grid.pack(padx=20, pady=20, fill="both", expand=True)
-        
         refrescar_pedidos()
 
+    def seleccionar_proveedor(self, datos):
+        self.id_proveedor_seleccionado = datos[0]
+        self.entry_nombre.delete(0, tk.END)
+        self.entry_nombre.insert(0, datos[1])
+        
+        self.entry_rif.delete(0, tk.END)
+        self.entry_rif.insert(0, datos[2])
+        
+        self.entry_contacto.delete(0, tk.END)
+        self.entry_contacto.insert(0, datos[3])
+
+    def modificar_proveedor_ui(self):
+        if not self.id_proveedor_seleccionado:
+            messagebox.showwarning("Atención", "Haz clic sobre un proveedor en la tabla para seleccionarlo antes de actualizar.")
+            return
+
+        nom = self.entry_nombre.get().strip()
+        rif = self.entry_rif.get().strip()
+        tel = self.entry_contacto.get().strip()
+
+        if not nom or not rif or not tel:
+            messagebox.showerror("Error", "Todos los campos principales son obligatorios.")
+            return
+
+        exito, msj = ctrl.actualizar_proveedor(self.id_proveedor_seleccionado, nom, rif, tel)
+        if exito:
+            messagebox.showinfo("Éxito", msj)
+            self.limpiar_formulario_proveedor()
+            self.cargar_proveedores()
+        else:
+            messagebox.showerror("Error", msj)
+
+    def eliminar_proveedor_ui(self):
+        if not self.id_proveedor_seleccionado:
+            messagebox.showwarning("Atención", "Haz clic sobre un proveedor en la tabla para seleccionarlo antes de eliminar.")
+            return
+
+        respuesta = messagebox.askyesno("Confirmar", "Al eliminar un proveedor se borrará también su historial de compras y catálogos.\n\n¿Estás seguro de eliminarlo permanentemente?")
+        if respuesta:
+            exito, msj = ctrl.eliminar_proveedor(self.id_proveedor_seleccionado)
+            if exito:
+                messagebox.showinfo("Éxito", msj)
+                self.limpiar_formulario_proveedor()
+                self.cargar_proveedores()
+            else:
+                messagebox.showerror("Error", msj)
     def limpiar_formulario_proveedor(self):
         self.entry_nombre.delete(0, tk.END)
         self.entry_rif.delete(0, tk.END)

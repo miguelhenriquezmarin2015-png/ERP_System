@@ -145,7 +145,7 @@ class Ventas(tk.Frame):
                 nueva_cantidad_total = cantidad_anterior + cantidad
                 
                 nuevo_subtotal = self.precio_actual * nueva_cantidad_total
-                subtotal_formateado = "{:.1f}".format(nuevo_subtotal)
+                subtotal_formateado = "{:.2f}".format(nuevo_subtotal)
                 
                 self.tre.item(item, values=(
                     valores_fila[0],      
@@ -159,7 +159,7 @@ class Ventas(tk.Frame):
 
         if not producto_ya_existe:
             subtotal = self.precio_actual * cantidad
-            subtotal_formateado = "{:.1f}".format(subtotal)
+            subtotal_formateado = "{:.2f}".format(subtotal)
             self.tre.insert("", "end", values=(
                 self.numero_factura, 
                 cliente, 
@@ -277,7 +277,7 @@ class Ventas(tk.Frame):
             
             precio_unitario = float(item_values[3])
             nuevo_subtotal = precio_unitario * new_cantidad
-            subtotal_formateado = "{:.1f}".format(nuevo_subtotal)
+            subtotal_formateado = "{:.2f}".format(nuevo_subtotal)
             
             self.tre.item(selected_item[0], values=(
                 item_values[0],
@@ -327,7 +327,7 @@ class Ventas(tk.Frame):
             messagebox.showwarning("Advertencia", "No hay productos en el carrito para pagar.")
             return
 
-        total_venta = 0.0
+        total_venta = self.total_venta_actual
         lista_productos_guardar = []
         
         for item in self.tre.get_children():
@@ -337,7 +337,6 @@ class Ventas(tk.Frame):
             cantidad = int(valores[4])
             subtotal = float(valores[5].replace(',', ''))
             
-            total_venta += subtotal
             lista_productos_guardar.append((producto, precio, cantidad, subtotal))
 
         ventana_pago = tk.Toplevel(self)
