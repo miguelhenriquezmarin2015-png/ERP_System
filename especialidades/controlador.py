@@ -376,12 +376,18 @@ def obtener_perfil_admin():
 def actualizar_perfil_admin(usuario, contrasena, nombre, cedula, telefono, correo):
     conn = conectar()
     cursor = conn.cursor()
-    instruccion = """UPDATE usuarios 
+    try:
+        instruccion = """UPDATE usuarios 
                      SET username=%s, password=%s, nombre=%s, cedula=%s, telefono=%s, correo=%s 
                      WHERE id = 1"""
-    cursor.execute(instruccion, (usuario, contrasena, nombre, cedula, telefono, correo))
-    conn.commit()
-    conn.close()
+        cursor.execute(instruccion, (usuario, contrasena, nombre, cedula, telefono, correo))
+        conn.commit()
+        return True
+    except Exception as e:
+        conn.rollback()
+        return False
+    finally:
+        conn.close()
 
 #ventas-----
 def exportar_ventas_pdf(modo):
@@ -1055,5 +1061,22 @@ def actualizar_proveedor(id_proveedor, nombre, rif, contacto):
     except Exception as e:
         conn.rollback()
         return False, f"Error al actualizar: {str(e)}"
+    finally:
+        conn.close()
+
+def obtener_catalogo_completo_por_proveedor(id_proveedor):
+    conn = conectar()
+    cursor = conn.cursor()
+    try:
+        query = """
+            SELECT pc.id_producto, i.nombre, i.costo, i.precio, i.stock, i.perecedero, i.vencimiento
+            FROM proveedor_catalogo pc
+            INNER JOIN inventario i ON pc.id_producto = i.id
+            WHERE pc.id_proveedor = %s;
+        """
+        cursor.execute(query, (id_proveedor,))
+        return cursor.fetchall()
+    except Exception as e:
+        return []
     finally:
         conn.close()
