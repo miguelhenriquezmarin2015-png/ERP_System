@@ -1,117 +1,182 @@
 from tkinter import *
 import tkinter as tk
-from tkinter import ttk,messagebox
+from tkinter import ttk, messagebox, simpledialog
 import especialidades.controlador as ctrl
 
 class Finanzas(tk.Frame):
-    def __init__(self, padre,controller):
+    def __init__(self, padre, controller):
         super().__init__(padre)
-        self.controller=controller
+        self.controller = controller
+        self.tipo_filtro = "Todo"  
         self.widgets()
-        self.modos_filtro = ["Mostrar Todo", "Diario", "Semanal", "Quincenal", "Mensual"]
-        self.indice_filtro = 0  
 
     def widgets(self):
-        canvas_finanzas=tk.Label(self,text="Ventas Realizadas ",font="arial 20 bold",bg="#C6D9E3")
-        canvas_finanzas.place(x=300,y=20,width=890,height=625)
+        # ================= PANEL IZQUIERDO (OPCIONES Y FILTROS) =================
+        lblframa_botones = LabelFrame(self, text="Opciones Financieras", font="arial 12 bold", bg="#C6D9E3")
+        lblframa_botones.place(x=20, y=20, width=250, height=625)
 
-        self.canvas=tk.Canvas(canvas_finanzas)
-        self.scrollbar=Scrollbar(canvas_finanzas,orient="vertical",command=self.canvas.yview)
-        self.scrollbar_frame=tk.Frame(self.canvas,bg="#C6D9E3")
-        self.scrollbar_frame.bind(
-            "<Configure>"
-            ,lambda e: self.canvas.configure
-            (scrollregion=self.canvas.bbox("all")
-             )
-        )
-        self.canvas.bind("<Configure>"
-                         ,lambda e: self.canvas.itemconfig(self.canvas.find_withtag("all")[0],width=e.width))
-        self.canvas.create_window((0,0),window=self.scrollbar_frame,anchor="nw")
+        tk.Button(lblframa_botones, text=" Fondos y Ahorros", font="arial 11 bold", bg="#FFC107", fg="black", cursor="hand2", command=self.abrir_fondos).place(x=10, y=20, width=220, height=45)
+        tk.Button(lblframa_botones, text="Registrar Gasto", font="arial 11 bold", bg="#F44336", fg="white", cursor="hand2", command=self.registrar_gasto).place(x=10, y=80, width=220, height=45)
+        
+        tk.Label(lblframa_botones, text="Filtros de Movimientos:", bg="#C6D9E3", font="arial 10 bold").place(x=10, y=150)
+        tk.Button(lblframa_botones, text="Ver Todo", font="arial 11 bold", bg="#90CAF9", cursor="hand2", command=lambda: self.filtrar_movimientos("Todo")).place(x=10, y=180, width=220, height=35)
+        tk.Button(lblframa_botones, text="Mostrar Ingresos", font="arial 11 bold", bg="#A5D6A7", cursor="hand2", command=lambda: self.filtrar_movimientos("Ingresos")).place(x=10, y=225, width=220, height=35)
+        tk.Button(lblframa_botones, text="Mostrar Egresos", font="arial 11 bold", bg="#EF9A9A", cursor="hand2", command=lambda: self.filtrar_movimientos("Egresos")).place(x=10, y=270, width=220, height=35)
+
+        # ================= PANEL DERECHO (DASHBOARD GENERAL) =================
+        self.lbl_balance = tk.Label(self, text="Balance General: $0.00", font=("arial", 20, "bold"), bg="#4CAF50", fg="white", relief="ridge")
+        self.lbl_balance.place(x=290, y=20, width=900, height=60)
+
+        canvas_fondo = tk.Label(self, bg="#C6D9E3")
+        canvas_fondo.place(x=290, y=90, width=900, height=555)
+
+        self.canvas = tk.Canvas(canvas_fondo, bg="#FFFFFF")
+        self.scrollbar = Scrollbar(canvas_fondo, orient="vertical", command=self.canvas.yview)
+        self.scrollbar_frame = tk.Frame(self.canvas, bg="#FFFFFF")
+        
+        self.scrollbar_frame.bind("<Configure>", lambda e: self.canvas.configure(scrollregion=self.canvas.bbox("all")))
+        self.canvas.create_window((0,0), window=self.scrollbar_frame, anchor="nw", width=880)
         self.canvas.configure(yscrollcommand=self.scrollbar.set)
-        self.canvas.pack(side="left",fill="both",expand=True)
-        self.scrollbar.pack(side="right",fill="y")
+        
+        self.canvas.pack(side="left", fill="both", expand=True)
+        self.scrollbar.pack(side="right", fill="y")
 
-#obsiones
+        self.actualizar_pantalla()
 
-        lblframa_botones=LabelFrame(self,text="Opciones",font="arial 12 bold",bg="#C6D9E3")
-        lblframa_botones.place(x=20,y=20,width=250,height=540)
+    def actualizar_pantalla(self):
+        datos_balance = ctrl.calcular_balance_general()
+        bal = datos_balance["balance_disponible"]
+        color_bg = "#4CAF50" if bal >= 0 else "#D32F2F"
+        self.lbl_balance.config(text=f"Balance General Disponible: ${bal:,.2f}", bg=color_bg)
+        self.cargar_movimientos()
 
-        self.bt1=tk.Button(lblframa_botones,text="Mostrar todo",font="arial 12 bold",bg="#4CAF50",fg="white",command=self.rotar_y_filtrar)
-        self.bt1.place(x=10,y=10,width=220,height=40)
+    def filtrar_movimientos(self, tipo):
+        self.tipo_filtro = tipo
+        self.cargar_movimientos()
 
-        self.bt2=tk.Button(lblframa_botones,text="Descargar",font="arial 12 bold",bg="#2196F3",fg="white",command=self.descargar_pdf)
-        self.bt2.place(x=10,y=60,width=220,height=40)
-
-        self.cargar_ventas()
-
-    def cargar_ventas(self, datos=None):
+    def cargar_movimientos(self):
         for widget in self.scrollbar_frame.winfo_children():
             widget.destroy()
 
-        headers = ["ID", "N° Factura", "Cliente", "Fecha", "Total General"]
+        headers = ["Tipo", "Descripción / Concepto", "Fecha y Hora", "Monto"]
         for col_idx, text in enumerate(headers):
-            lbl_header = tk.Label(
-                self.scrollbar_frame,
-                text=text,
-                font=("arial", 16, "bold"),
-                bg="#9FB8C7", 
-                fg="black",
-                relief="groove",
-                padx=10,
-                pady=5
-            )
-            lbl_header.grid(row=0, column=col_idx, sticky="nsew")
+            tk.Label(self.scrollbar_frame, text=text, font=("arial", 12, "bold"), bg="#9FB8C7", fg="black", relief="groove", padx=5, pady=5).grid(row=0, column=col_idx, sticky="nsew")
 
-        if datos is not None:
-            historial_ventas = datos
-        else:
-            historial_ventas = ctrl.obtener_ventas()
+        movimientos = ctrl.obtener_movimientos(self.tipo_filtro)
 
-        for row_idx, venta in enumerate(historial_ventas, start=1):
-            color_fila = "#E1EBF0" if row_idx % 2 == 0 else "#F4F8FA"
+        if not movimientos:
+            tk.Label(self.scrollbar_frame, text="No hay movimientos para mostrar.", font=("arial", 12, "italic"), bg="#FFFFFF").grid(row=1, column=0, columnspan=4, pady=20)
+            return
 
-            for col_idx, valor in enumerate(venta):
-                if col_idx == 4:
-                    texto_celda = f"${valor:,.2f}"
-                else:
-                    texto_celda = valor
+        for row_idx, mov in enumerate(movimientos, start=1):
+            color_fila = "#F0F4F8" if row_idx % 2 == 0 else "#FFFFFF"
+            id_m, tipo, desc, fecha, monto = mov
+            
+            color_texto = "#388E3C" if tipo == "Ingreso" else "#D32F2F"
 
-                lbl_dato = tk.Label(
-                    self.scrollbar_frame,
-                    text=texto_celda,
-                    font=("arial", 16),
-                    bg=color_fila,
-                    anchor="center" if col_idx in [0, 1, 3] else ("w" if col_idx == 2 else "e"),
-                    padx=10,
-                    pady=5
-                )
-                lbl_dato.grid(row=row_idx, column=col_idx, sticky="nsew")
-                
-                lbl_dato.bind("<Button-1>", lambda event, v=venta: self.seleccionar_factura(v))
+            valores = [tipo, desc, fecha, f"${float(monto):,.2f}"]
+            for col_idx, valor in enumerate(valores):
+                tk.Label(
+                    self.scrollbar_frame, text=valor, font=("arial", 11), bg=color_fila, 
+                    fg=color_texto if col_idx == 3 or col_idx == 0 else "black",
+                    anchor="center" if col_idx in [0, 2] else ("w" if col_idx == 1 else "e"), padx=10, pady=6
+                ).grid(row=row_idx, column=col_idx, sticky="nsew")
 
         self.scrollbar_frame.grid_columnconfigure(0, weight=1) 
-        self.scrollbar_frame.grid_columnconfigure(1, weight=2) 
-        self.scrollbar_frame.grid_columnconfigure(2, weight=4) 
-        self.scrollbar_frame.grid_columnconfigure(3, weight=2) 
-        self.scrollbar_frame.grid_columnconfigure(4, weight=2) 
+        self.scrollbar_frame.grid_columnconfigure(1, weight=3) 
+        self.scrollbar_frame.grid_columnconfigure(2, weight=2) 
+        self.scrollbar_frame.grid_columnconfigure(3, weight=1)
 
-    def rotar_y_filtrar(self):
-        self.indice_filtro = (self.indice_filtro + 1) % len(self.modos_filtro)
-        modo_actual = self.modos_filtro[self.indice_filtro]
+    def registrar_gasto(self):
+        top = tk.Toplevel(self)
+        top.title("Registrar Nuevo Gasto / Egreso")
+        top.geometry("400x320+450+200")
+        top.config(bg="#f4f4f4")
+        top.grab_set()
 
-        self.bt1.config(text=modo_actual)
+        tk.Label(top, text="Descripción del Gasto:", font=("arial", 11, "bold"), bg="#f4f4f4").pack(pady=(15, 5))
+        ent_desc = tk.Entry(top, font=("arial", 12), width=30)
+        ent_desc.pack()
 
-        ventas_filtradas = ctrl.obtener_ventas_filtradas(modo_actual)
+        tk.Label(top, text="Monto ($):", font=("arial", 11, "bold"), bg="#f4f4f4").pack(pady=(15, 5))
+        ent_monto = tk.Entry(top, font=("arial", 12), width=30)
+        ent_monto.pack()
 
-        self.cargar_ventas(datos=ventas_filtradas)
+        tk.Label(top, text="¿Debitar de algún fondo? (Opcional):", font=("arial", 11, "bold"), bg="#f4f4f4").pack(pady=(15, 5))
+        
+        fondos = ctrl.obtener_lista_fondos()
+        valores_combo = ["No (Debitar del Balance General)"] + [f"{f[0]} - {f[1]} (Saldo: ${f[2]:.2f})" for f in fondos]
+        
+        combo_fondos = ttk.Combobox(top, values=valores_combo, state="readonly", width=38, font=("arial", 10))
+        combo_fondos.current(0)
+        combo_fondos.pack()
 
-    def descargar_pdf(self):
-        modo_reporte = self.bt1.cget("text")
+        def procesar_gasto():
+            desc = ent_desc.get().strip()
+            try:
+                monto = float(ent_monto.get())
+            except ValueError:
+                messagebox.showerror("Error", "El monto debe ser un número válido.", parent=top)
+                return
+            
+            if not desc or monto <= 0:
+                messagebox.showerror("Error", "Complete todos los campos correctamente.", parent=top)
+                return
 
-        from tkinter import messagebox
-        try:
-            ctrl.exportar_ventas_pdf(modo_reporte)
-            messagebox.showinfo("Éxito", f"¡Reporte PDF ({modo_reporte}) generado correctamente en Descargas!")
-        except Exception as e:
-            messagebox.showerror("Error", f"No se pudo generar el PDF: {e}")
+            seleccion = combo_fondos.get()
+            id_fondo = None
+            if seleccion != "No (Debitar del Balance General)":
+                id_fondo = int(seleccion.split("-")[0].strip())
 
+            exito, msj = ctrl.registrar_egreso(desc, monto, id_fondo)
+            if exito:
+                messagebox.showinfo("Éxito", msj, parent=top)
+                top.destroy()
+                self.actualizar_pantalla()
+            else:
+                messagebox.showerror("Fondos Insuficientes", msj, parent=top)
+
+        tk.Button(top, text="Guardar Gasto", font=("arial", 11, "bold"), bg="#F44336", fg="white", cursor="hand2", command=procesar_gasto).pack(pady=20)
+
+    def abrir_fondos(self):
+        top = tk.Toplevel(self)
+        top.title("Gestión de Fondos y Ahorros")
+        top.geometry("500x350+400+180")
+        top.config(bg="#C6D9E3")
+        top.grab_set()
+
+        tk.Label(top, text="Tus Fondos de Ahorro", font=("arial", 16, "bold"), bg="#C6D9E3").pack(pady=10)
+
+        frame_fondos = tk.Frame(top, bg="#FFFFFF", bd=2, relief="groove")
+        frame_fondos.pack(fill="both", expand=True, padx=20, pady=10)
+
+        def refrescar_lista_fondos():
+            for widget in frame_fondos.winfo_children():
+                widget.destroy()
+            
+            fondos = ctrl.obtener_lista_fondos()
+            for f in fondos:
+                id_f, nombre, saldo = f
+                row_frame = tk.Frame(frame_fondos, bg="#FFFFFF")
+                row_frame.pack(fill="x", padx=10, pady=8)
+                
+                tk.Label(row_frame, text=nombre, font=("arial", 11, "bold"), bg="#FFFFFF", anchor="w", width=25).pack(side="left")
+                tk.Label(row_frame, text=f"${float(saldo):,.2f}", font=("arial", 11), bg="#FFFFFF", fg="#388E3C").pack(side="left")
+                
+                tk.Button(
+                    row_frame, text="+ Añadir", bg="#2196F3", fg="white", font=("arial", 9, "bold"), cursor="hand2",
+                    command=lambda i=id_f, n=nombre: ingresar_dinero_fondo(i, n)
+                ).pack(side="right")
+
+        def ingresar_dinero_fondo(id_fondo, nombre_fondo):
+            monto = simpledialog.askfloat("Ingresar Dinero", f"¿Cuánto deseas transferir al '{nombre_fondo}'?\n(Este dinero se descontará de tu Balance General)", parent=top, minvalue=0.01)
+            if monto:
+                exito, msj = ctrl.transferir_a_fondo(id_fondo, monto)
+                if exito:
+                    messagebox.showinfo("Éxito", msj, parent=top)
+                    refrescar_lista_fondos()
+                    self.actualizar_pantalla()
+                else:
+                    messagebox.showerror("Error", msj, parent=top)
+
+        refrescar_lista_fondos()

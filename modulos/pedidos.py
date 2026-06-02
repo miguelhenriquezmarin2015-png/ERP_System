@@ -211,7 +211,14 @@ class Pedidos(tk.Frame):
             messagebox.showwarning("Pedido Vacío", "Use los botones [+] para seleccionar cantidades antes de confirmar.")
             return
 
-        # NOTA: Aquí irá la validación de fondos cuando se implemente el módulo de Finanzas.
+        # VALIDACIÓN DE FONDOS (Plan de Acción)
+        saldo_reposicion = ctrl.obtener_saldo_fondo("Fondo de Reposición")
+        if total_general > saldo_reposicion:
+            messagebox.showwarning(
+                "Fondos Insuficientes", 
+                f"El costo total de este pedido (${total_general:.2f}) supera el presupuesto asignado en el 'Fondo de Reposición' (${saldo_reposicion:.2f}).\n\nPor favor, asigne capital a este fondo desde el módulo de Finanzas antes de emitir la orden."
+            )
+            return
 
         exito, msj = ctrl.guardar_pedido_bd(id_proveedor, productos_pedidos)
         if not exito:
