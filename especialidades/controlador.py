@@ -851,7 +851,8 @@ def generar_csv_pedido(nombre_proveedor, lista_productos, total_general):
         
     return ruta_destino
 
-    #Finanzas
+#Finanzas
+
 def calcular_balance_general():
     conn = conectar()
     cursor = conn.cursor()
@@ -977,6 +978,7 @@ def obtener_saldo_fondo(nombre_fondo):
         return 0.0
     finally:
         conn.close()
+
 def obtener_precio_actual_producto(nombre_producto):
     conn = conectar()
     cursor = conn.cursor()
@@ -990,6 +992,7 @@ def obtener_precio_actual_producto(nombre_producto):
         conn.close()
 
 def procesar_recepcion_pedido(id_pedido, nombre_producto, cantidad_recibida, nuevo_precio, motivo_faltante):
+
     conn = conectar()
     cursor = conn.cursor()
     try:
@@ -1028,3 +1031,25 @@ def procesar_recepcion_pedido(id_pedido, nombre_producto, cantidad_recibida, nue
         return False, f"Error al procesar recepción: {str(e)}"
     finally:
         conn.close()
+
+    import mysql.connector
+
+def obtener_saldo():
+    try:
+        conn=conectar()
+        cursor = conn.cursor()
+        
+        query = "SELECT saldo FROM fondos LIMIT 1"
+        cursor.execute(query)
+        resultado = cursor.fetchone()
+        
+        cursor.close()
+        conn.close()
+        
+        if resultado:
+            return resultado[0] 
+        return 0.00
+        
+    except mysql.connector.Error as err:
+        print(f"Error de base de datos: {err}")
+        return 0.00
