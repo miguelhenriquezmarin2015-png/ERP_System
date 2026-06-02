@@ -48,6 +48,9 @@ class Inventario(tk.Frame):
         self.bt3=tk.Button(lblframe_botones,text="INVENTARIO BAJO",font="arial 12 bold",bg="#4CAF50",fg="white",command=self.alternar_filtro_stock)
         self.bt3.place(x=10,y=20,width=250,height=40)
 
+        self.bt2=tk.Button(lblframe_botones,text="Limpiar Busqueda",font="arial 12 bold",bg="#2196F3",fg="white",command=self.limpiar_formulario_inventario)
+        self.bt2.place(x=10,y=80,width=250,height=40)
+
     def alternar_filtro_stock(self):
         if not self.filtro_bajo_stock_activo:
             productos_bajos = ctrl.mostrar_inventario_baja_cantidad()
@@ -200,3 +203,9 @@ class Inventario(tk.Frame):
                 
             except Exception as e:
                 messagebox.showerror("Error", f"{nombre_articulo} no se pudo eliminar:\n{e}")
+
+    def limpiar_formulario_inventario(self):
+        self.combobox_buscar.delete(0, tk.END)
+        
+        if hasattr(self, 'cargar_articulos'):
+            self.cargar_articulos()

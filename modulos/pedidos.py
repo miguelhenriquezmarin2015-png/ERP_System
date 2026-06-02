@@ -101,6 +101,13 @@ class Pedidos(tk.Frame):
         )
         self.btn_confirmar.pack(side="right", padx=5, pady=5)
 
+        self.btn_limpiar = tk.Button(
+            frame_acciones_externo, text="Limpiar Selección",
+            font="arial 11 bold", bg="#f44336", fg="white", cursor="hand2", bd=0,
+            padx=15, pady=6, command=self.limpiar_formulario_pedidos
+        )
+        self.btn_limpiar.pack(side="right", padx=5, pady=5)
+
         self.entry_proveedor.bind("<<ComboboxSelected>>", self.cargar_catalogo_pedido)
         self.entry_proveedor.bind("<KeyRelease>", self.programar_filtrado)
         self.cargar_proveedores()
@@ -194,6 +201,19 @@ class Pedidos(tk.Frame):
             self.canvas.configure(scrollregion=self.canvas.bbox("all"))
             self.canvas.yview_moveto(0)
 
+    def limpiar_formulario_pedidos(self):
+        self.entry_proveedor.set("")
+        if hasattr(self, 'todos_los_proveedores'):
+            del self.todos_los_proveedores
+            
+        if hasattr(self, 'items_pedido'):
+            for entry in self.items_pedido.values():
+                entry["entry"].delete(0, tk.END)
+                entry["entry"].insert(0, "0")
+                
+        if hasattr(self, 'recalcular_total_pedido'):
+            self.recalcular_total_pedido()
+
     def procesar_y_exportar_pedido(self):
         proveedor_sel = self.entry_proveedor.get()
         if not proveedor_sel or "-" not in proveedor_sel:
@@ -263,6 +283,8 @@ class Pedidos(tk.Frame):
             messagebox.showerror("Error de Exportación", f"Pedido guardado en BD, pero falló la exportación: {e}")
 
     def recalcular_total_pedido(self):
+        if not hasattr(self, 'items_pedido') or self.items_pedido is None:
+            return 
         total_acumulado = 0.0
         for id_p, info in self.items_pedido.items():
             try:

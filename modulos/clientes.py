@@ -58,12 +58,10 @@ class Clientes(tk.Frame):
 
     def seleccionar_cliente(self, datos_cliente):
         
-        
         self.entry_nombre.delete(0, tk.END)
         self.entry_cedula.delete(0, tk.END)
         self.entry_telefono.delete(0, tk.END)
         
-        # 2. Rellenar con la información correspondiente usando los índices correctos
         self.entry_nombre.insert(0, datos_cliente[1])    
         self.entry_cedula.insert(0, datos_cliente[2])     
         self.entry_telefono.insert(0, datos_cliente[3])  
@@ -108,7 +106,7 @@ class Clientes(tk.Frame):
 
 #agregar clientes
         frame_agregar=LabelFrame(self,text="Clientes",font="arial 12 bold",bg="#C6D9E3")
-        frame_agregar.place(x=20,y=20,width=250,height=480)
+        frame_agregar.place(x=20,y=20,width=250,height=410)
 
         self.label_nombre=tk.Label(frame_agregar,text="Nombre",font="arial 12 bold",bg="#C6D9E3")
         self.label_nombre.place(x=5,y=5,width=220,height=40)
@@ -137,13 +135,16 @@ class Clientes(tk.Frame):
 #obsiones
 
         lblframa_botones=LabelFrame(self,text="Opciones",font="arial 12 bold",bg="#C6D9E3")
-        lblframa_botones.place(x=20,y=500,width=250,height=140)
+        lblframa_botones.place(x=20,y=420,width=250,height=210)
 
         bt1=tk.Button(lblframa_botones,text="Guardar",font="arial 12 bold",bg="#4CAF50",fg="white",command=self.nuevo_cliente)
         bt1.place(x=10,y=10,width=220,height=40)
 
         bt2=tk.Button(lblframa_botones,text="Modificar",font="arial 12 bold",bg="#2196F3",fg="white",command=self.actualizar_cliente)
         bt2.place(x=10,y=60,width=220,height=40)
+
+        bt3=tk.Button(lblframa_botones,text="Limpiar",font="arial 12 bold",bg="#f44336",fg="white",command=self.limpiar_formulario_cliente)
+        bt3.place(x=10,y=110,width=220,height=40)
 
         self.cargar_clientes()
 
@@ -194,6 +195,12 @@ class Clientes(tk.Frame):
 
         self.cargar_clientes()
 
-
-
+    def limpiar_formulario_cliente(self):
+        self.entry_nombre.delete(0, tk.END)
+        self.entry_cedula.delete(0, tk.END)
+        self.entry_telefono.delete(0, tk.END)
         
+        self.entry_tipo.set("Natural")
+        
+        self.id_cliente_seleccionado = None
+            

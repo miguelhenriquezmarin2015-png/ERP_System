@@ -53,6 +53,9 @@ class Proveedor(tk.Frame):
         self.boton_guardar = tk.Button(labelproveedor, text="Guardar", font="arial 14 bold", bg="#4CAF50", fg="white",command=self.guardar_nuevo_proveedor)
         self.boton_guardar.place(x=10, y=410, width=230, height=40)
 
+        self.boton_limpiar = tk.Button(labelproveedor, text="Limpiar", font="arial 14 bold", bg="#f44336", fg="white", command=self.limpiar_formulario_proveedor)
+        self.boton_limpiar.place(x=10, y=470, width=230, height=40)
+
         self.cargar_proveedores()
 
     def cargar_proveedores(self):
@@ -444,3 +447,11 @@ class Proveedor(tk.Frame):
         frame_grid.pack(padx=20, pady=20, fill="both", expand=True)
         
         refrescar_pedidos()
+
+    def limpiar_formulario_proveedor(self):
+        self.entry_nombre.delete(0, tk.END)
+        self.entry_rif.delete(0, tk.END)
+        self.entry_contacto.delete(0, tk.END)
+        
+        if hasattr(self, 'id_proveedor_seleccionado'):
+            self.id_proveedor_seleccionado = None
