@@ -167,7 +167,6 @@ class Inventario(tk.Frame):
         
         if productos_bajos:
             mensaje = "⚠️ ALERTA DE STOCK BAJO ⚠️\n\nLos siguientes artículos tienen menos de 15 unidades:\n\n"
-            
             for id_art, nombre, costo, precio, stock, perecedero, vencimiento in productos_bajos:
                 mensaje += f"• {nombre}: ({stock} unidades restantes)\n"
                 
@@ -182,6 +181,7 @@ class Inventario(tk.Frame):
                 mensaje += f"• {nombre}: Vence el {fecha}\n"
                 
             messagebox.showwarning("Alerta de Sanidad / Inventario", mensaje)
+
 
     def al_abrir_pestana_inventario(self):
         self.cargar_articulos() 

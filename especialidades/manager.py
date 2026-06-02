@@ -5,6 +5,8 @@ import os
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 from modulos.login import Login
 from especialidades.container import Container
+from modulos.inventario import Inventario
+
 
 class Manager(Tk):
     def __init__(self, *args,**kwagrs):
@@ -12,6 +14,7 @@ class Manager(Tk):
         self.title("Mini Market")
         self.geometry("1200x700+120+20")
         self.resizable(False,False)
+        self.alertas_mostradas = False 
 
         container=Frame(self)
         container.pack(side=TOP,fill=BOTH,expand=True)
@@ -30,9 +33,14 @@ class Manager(Tk):
         self.style=ttk.Style()
         self.style.theme_use("clam")
     
-    def show_frame(self,container):
-        frame=self.frames[container]
+    def show_frame(self,ventana_clases):
+        frame=self.frames[ventana_clases]
         frame.tkraise()
+        if ventana_clases.__name__ == "Container" or ventana_clases == Container:
+            if Inventario in self.frames:
+                self.frames[Inventario].verificar_alertas_stock()
+                self.frames[Inventario].verificar_alertas_vencimiento()
+                
         return frame
     
 def main():

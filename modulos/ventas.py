@@ -24,6 +24,10 @@ class Ventas(tk.Frame):
         self.entry_producto['values'] = lista_completa
 
     def cargar_productos(self, event=None):
+        if not self.entry_producto.get().strip():
+            self.actualizar_datos_producto()
+            return
+        
         if hasattr(self, '_timer_producto_id') and self._timer_producto_id:
             self.after_cancel(self._timer_producto_id)
             
@@ -64,13 +68,20 @@ class Ventas(tk.Frame):
                 self.precio_actual = datos[1]  # precio
                 self.stock_actual = datos[2]   # stock
                 
-                # CORRECCIÓN: Actualizamos las dos etiquetas de la interfaz
                 self.label_stock.config(text=f"stock: {self.stock_actual}")
                 self.label_precio_unitario.config(text=f"Precio unitario: ${self.precio_actual:.2f}")
             else:
                 self.stock_actual = 0
                 self.precio_actual = 0.0
+                self.label_stock.config(text="stock: 0")
+                self.label_precio_unitario.config(text="Precio unitario: $0.00")
+        else:
+            self.stock_actual = 0
+            self.precio_actual = 0.0
             
+            self.label_stock.config(text="stock: 0")
+            self.label_precio_unitario.config(text="Precio unitario: $0.00")
+
     def actualizar_stock(self, event=None):
         producto_seleccionado=self.entry_producto.get()
         datos = ctrl.mostrar_vender(producto_seleccionado)
@@ -214,10 +225,10 @@ class Ventas(tk.Frame):
         if not seleccionado:
             messagebox.showwarning("Advertencia", "Por favor, seleccione un artículo para eliminar.")
             return
-
+            
         if not messagebox.askyesno("Confirmar", "¿Desea eliminar este artículo del carrito?"):
             return
-
+            
         for item in seleccionado:
             valores = self.tre.item(item, 'values')
             if not valores:
@@ -225,19 +236,26 @@ class Ventas(tk.Frame):
                 
             producto = str(valores[2]).strip()
             cantidad = int(valores[4])
-
+            
             ctrl.restaurar_stock(producto, cantidad)
-
+            
             if self.entry_producto.get() == producto:
                 self.stock_actual += cantidad
                 self.label_stock.config(text=f"stock: {self.stock_actual}")
-
+                
             self.tre.delete(item)
-
+            
         if not self.tre.get_children():
             self.entry_cliente.config(state="normal")
             self.entry_cliente.set("")
-
+            
+        if hasattr(self.entry_producto, 'delete'):
+            self.entry_producto.delete(0, tk.END)
+        elif hasattr(self.entry_producto, 'set'):
+            self.entry_producto.set("")
+            
+        self.actualizar_datos_producto()
+            
         self.actualizar_total_carrito()
         messagebox.showinfo("Éxito", "Artículo removido correctamente.")
 
@@ -315,17 +333,25 @@ class Ventas(tk.Frame):
                     ctrl.restaurar_stock(producto, cantidad)
                 except IndexError:
                     continue
-
+                    
             self.tre.delete(*self.tre.get_children())
             
-            producto_pantalla = self.entry_producto.get()
-            if producto_pantalla:
-                self.stock_actual = ctrl.obtener_stock_actual(producto_pantalla)
-                self.label_stock.config(text=f"stock: {self.stock_actual}")
-
-            self.actualizar_total_carrito()
-            self.entry_cliente.config(state="normal")
-            self.entry_cliente.set("")
+        producto_pantalla = self.entry_producto.get()
+        if producto_pantalla:
+            self.stock_actual = ctrl.obtener_stock_actual(producto_pantalla)
+            self.label_stock.config(text=f"stock: {self.stock_actual}")
+            
+        self.actualizar_total_carrito()
+        self.entry_cliente.config(state="normal")
+        self.entry_cliente.set("")
+        
+        # Limpieza del combobox de producto
+        if hasattr(self.entry_producto, 'delete'):
+            self.entry_producto.delete(0, tk.END)
+        elif hasattr(self.entry_producto, 'set'):
+            self.entry_producto.set("")
+            
+        self.actualizar_datos_producto()
 
     def realizar_pago(self):
         if self.total_venta_actual == 0.0:
