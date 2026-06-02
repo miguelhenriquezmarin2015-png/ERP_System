@@ -61,7 +61,7 @@ class Pedidos(tk.Frame):
         self.entry_proveedor.place(x=130, y=10, width=200, height=40)
         self.entry_proveedor.bind("<KeyRelease>", self.programar_filtrado)
 
-        tk.Label(labelframe, text="Formato Exportación:", font="arial 14 bold", bg="#C6D9E3").place(x=370, y=10)
+        tk.Label(labelframe, text="Formato del reporte:", font="arial 14 bold", bg="#C6D9E3").place(x=370, y=10)
         
         self.formato_var = tk.StringVar(value="Ambos (PDF y CSV)")
         self.combo_formato = ttk.Combobox(labelframe, textvariable=self.formato_var, values=["PDF", "CSV", "Ambos (PDF y CSV)"])

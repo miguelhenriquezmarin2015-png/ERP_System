@@ -123,8 +123,8 @@ class Informacion(tk.Frame):
         rol      = self.combo_rol.get()
         sueldo_str = self.entry_sueldo.get().strip()
 
-        if not username or not password or not sueldo_str:
-            messagebox.showerror("Error", "Usuario, contraseña y sueldo son campos obligatorios.")
+        if not username or not password or not sueldo_str or not nombre:
+            messagebox.showerror("Error", "Usuario, contraseña, nombre y sueldo son campos obligatorios.")
             return
 
         try:
@@ -161,13 +161,11 @@ class Informacion(tk.Frame):
         desc = self.text_descripcion.get("1.0", tk.END).strip()
 
         if nom == "":
-            from tkinter import messagebox
             messagebox.showwarning("Atención", "El Nombre del Negocio es obligatorio.")
             return
 
         ctrl.guardar_empresa(nom, dir, tel, eml, desc)
 
-        from tkinter import messagebox
         messagebox.showinfo("Éxito", "¡Información del negocio actualizada correctamente!")
 
     def ver_empleados(self):
@@ -184,7 +182,7 @@ class Informacion(tk.Frame):
         self.bt1 = tk.Button(top_empleados,  text="Mostrar Todo: Todos", font="arial 12 bold", bg="#4CAF50", fg="white", command=lambda: self.filtrar_por_rol())
         self.bt1.place(x=20, y=20, width=260, height=40) 
 
-        self.bt2 = tk.Button(top_empleados, text="Descargar", font="arial 12 bold", bg="#2196F3", fg="white",command=lambda: descargar_empleados(self))
+        self.bt2 = tk.Button(top_empleados, text="Descargar", font="arial 12 bold", bg="#2196F3", fg="white",command=self.descargar_empleados)
         self.bt2.place(x=300, y=20, width=220, height=40)
 
         canvas_finanzas = tk.Frame(top_empleados, bg="#C6D9E3")
@@ -406,14 +404,11 @@ class Informacion(tk.Frame):
         corr = self.entry_admin_correo.get()
 
         if user == "" or password == "":
-            from tkinter import messagebox
             messagebox.showwarning("Atención", "El usuario y la contraseña no pueden estar vacíos.")
             return
 
-        # Guardar en la base de datos sobre el ID 1
         exito = ctrl.actualizar_perfil_admin(user, password, nom, ced, tel, corr)
         
-        from tkinter import messagebox
         if exito:
             messagebox.showinfo("Éxito", "¡Perfil de administrador actualizado correctamente!")
         else:
@@ -516,36 +511,36 @@ class Informacion(tk.Frame):
         if hasattr(self, 'combo_rol') and self.combo_rol:
             self.combo_rol.current(0)
 
-def descargar_empleados(self):
-    empleados = ctrl.obtener_empleados()
+    def descargar_empleados(self):
+        empleados = ctrl.obtener_empleados()
     
-    if not empleados:
-        messagebox.showwarning("Advertencia", "No hay empleados registrados para exportar.")
-        return
+        if not empleados:
+            messagebox.showwarning("Advertencia", "No hay empleados registrados para exportar.")
+            return
 
-    ruta_archivo = filedialog.asksaveasfilename(
-        title="Guardar Reporte de Empleados",
-        defaultextension=".csv",
-        filetypes=[("Archivos CSV (Excel)", "*.csv"), ("Todos los archivos", "*.*")]
-    )
+        ruta_archivo = filedialog.asksaveasfilename(
+            title="Guardar Reporte de Empleados",
+            defaultextension=".csv",
+            filetypes=[("Archivos CSV (Excel)", "*.csv"), ("Todos los archivos", "*.*")]
+        )
     
-    if not ruta_archivo:
-        return
+        if not ruta_archivo:
+            return
 
-    try:
-        with open(ruta_archivo, mode='w', newline='', encoding='utf-8-sig') as archivo_csv:
-            escritor = csv.writer(archivo_csv, delimiter=';') 
+        try:
+            with open(ruta_archivo, mode='w', newline='', encoding='utf-8-sig') as archivo_csv:
+                escritor = csv.writer(archivo_csv, delimiter=';') 
             
-            escritor.writerow(["ID", "Usuario", "Nombre Completo", "Cédula", "Teléfono", "Correo", "Rol", "Sueldo"])
+                escritor.writerow(["ID", "Usuario", "Nombre Completo", "Cédula", "Teléfono", "Correo", "Rol", "Sueldo"])
             
-            for emp in empleados:
-                id_emp, username, nombre, cedula, telefono, correo, rol, sueldo = emp
+                for emp in empleados:
+                    id_emp, username, nombre, cedula, telefono, correo, rol, sueldo = emp
                 
-                sueldo_formateado = f"{float(sueldo):.2f}" if sueldo else "0.00"
+                    sueldo_formateado = f"{float(sueldo):.2f}" if sueldo else "0.00"
                 
-                escritor.writerow([id_emp, username, nombre, cedula, telefono, correo, rol, sueldo_formateado])
+                    escritor.writerow([id_emp, username, nombre, cedula, telefono, correo, rol, sueldo_formateado])
                 
-        messagebox.showinfo("Éxito", f"Reporte exportado correctamente en:\n{ruta_archivo}")
+            messagebox.showinfo("Éxito", f"Reporte exportado correctamente en:\n{ruta_archivo}")
         
-    except Exception as e:
-        messagebox.showerror("Error", f"No se pudo guardar el archivo. Asegúrate de que no esté abierto en Excel.\nDetalle: {str(e)}")
+        except Exception as e:
+            messagebox.showerror("Error", f"No se pudo guardar el archivo. Asegúrate de que no esté abierto en Excel.\nDetalle: {str(e)}")

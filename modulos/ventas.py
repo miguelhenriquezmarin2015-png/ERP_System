@@ -52,7 +52,10 @@ class Ventas(tk.Frame):
         self.entry_producto['values'] = lista_filtrada
         
         if lista_filtrada:
-            self.entry_producto.event_generate("<Down>")  
+            try:
+                self.entry_producto.event_generate("<Down>")
+            except tk.TclError:
+                pass      
             self.entry_producto.icursor(tk.END) 
     
     def actualizar_datos_producto(self, event=None):
@@ -115,8 +118,10 @@ class Ventas(tk.Frame):
         self.entry_cliente['values'] = lista_filtrada
         
         if lista_filtrada:
-            # --- CAMBIA ESTA LÍNEA ---
-            self.entry_cliente.event_generate("<Down>") 
+            try:
+                self.entry_cliente.event_generate("<Down>") 
+            except tk.TclError:
+                pass
             self.entry_cliente.icursor(tk.END)
 
     def agregar_al_carrito(self):

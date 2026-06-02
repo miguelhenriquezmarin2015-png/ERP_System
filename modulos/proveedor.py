@@ -159,8 +159,8 @@ class Proveedor(tk.Frame):
             messagebox.showerror("Error", mensaje)
 
     def ver_catalogo_articulos(self, datos_proveedor):
-        id_prov = datos_proveedor
-        nombre_prov = datos_proveedor
+        id_prov = datos_proveedor[0]
+        nombre_prov = datos_proveedor[1]
 
         # Crear ventana flotante
         top_cat = tk.Toplevel(self)
@@ -195,7 +195,7 @@ class Proveedor(tk.Frame):
                 lbl = tk.Label(frame_grid_sub, text=h_text, font=("arial", 10, "bold"), relief="groove", padx=5, pady=5)
                 lbl.grid(row=0, column=col_idx, sticky="nsew")
 
-            productos = ctrl.obtener_catalogo_por_proveedor(id_prov)
+            productos = ctrl.obtener_catalogo_completo_por_proveedor(id_prov)
             if not productos:
                 return
 
