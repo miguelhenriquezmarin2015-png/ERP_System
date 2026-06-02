@@ -20,10 +20,10 @@ class Finanzas(tk.Frame):
         
         tk.Button(lblframa_botones, text="Añadir Capital", font="arial 11 bold", bg="#8BC34A", fg="white", cursor="hand2", command=self.registrar_inversion_ui).place(x=10, y=140, width=220, height=45)
 
-        tk.Label(lblframa_botones, text="Filtros de Movimientos:", bg="#C6D9E3", font="arial 10 bold").place(x=10, y=150)
-        tk.Button(lblframa_botones, text="Ver Todo", font="arial 11 bold", bg="#90CAF9", cursor="hand2", command=lambda: self.filtrar_movimientos("Todo")).place(x=10, y=180, width=220, height=35)
-        tk.Button(lblframa_botones, text="Mostrar Ingresos", font="arial 11 bold", bg="#A5D6A7", cursor="hand2", command=lambda: self.filtrar_movimientos("Ingresos")).place(x=10, y=225, width=220, height=35)
-        tk.Button(lblframa_botones, text="Mostrar Egresos", font="arial 11 bold", bg="#EF9A9A", cursor="hand2", command=lambda: self.filtrar_movimientos("Egresos")).place(x=10, y=270, width=220, height=35)
+        tk.Label(lblframa_botones, text="Filtros de Movimientos:", bg="#C6D9E3", font="arial 10 bold").place(x=10, y=195)
+        tk.Button(lblframa_botones, text="Ver Todo", font="arial 11 bold", bg="#90CAF9", cursor="hand2", command=lambda: self.filtrar_movimientos("Todo")).place(x=10, y=220, width=220, height=35)
+        tk.Button(lblframa_botones, text="Mostrar Ingresos", font="arial 11 bold", bg="#A5D6A7", cursor="hand2", command=lambda: self.filtrar_movimientos("Ingresos")).place(x=10, y=265, width=220, height=35)
+        tk.Button(lblframa_botones, text="Mostrar Egresos", font="arial 11 bold", bg="#EF9A9A", cursor="hand2", command=lambda: self.filtrar_movimientos("Egresos")).place(x=10, y=310, width=220, height=35)
 
         # ================= PANEL DERECHO (DASHBOARD GENERAL) =================
         self.lbl_balance = tk.Label(self, text="Balance General: $0.00", font=("arial", 20, "bold"), bg="#4CAF50", fg="white", relief="ridge")
@@ -183,39 +183,39 @@ class Finanzas(tk.Frame):
 
         refrescar_lista_fondos()
 
-def registrar_inversion_ui(self):
-        top = tk.Toplevel(self)
-        top.title("Registrar Capital / Inversión")
-        top.geometry("400x250+450+200")
-        top.config(bg="#f4f4f4")
-        top.grab_set()
+    def registrar_inversion_ui(self):
+            top = tk.Toplevel(self)
+            top.title("Registrar Capital / Inversión")
+            top.geometry("400x250+450+200")
+            top.config(bg="#f4f4f4")
+            top.grab_set()
 
-        tk.Label(top, text="Origen del Capital (Ej: Inversionista, Préstamo):", font=("arial", 10, "bold"), bg="#f4f4f4").pack(pady=(15, 5))
-        ent_desc = tk.Entry(top, font=("arial", 12), width=30)
-        ent_desc.pack()
+            tk.Label(top, text="Origen del Capital (Ej: Inversionista, Préstamo):", font=("arial", 10, "bold"), bg="#f4f4f4").pack(pady=(15, 5))
+            ent_desc = tk.Entry(top, font=("arial", 12), width=30)
+            ent_desc.pack()
 
-        tk.Label(top, text="Monto a Invertir ($):", font=("arial", 10, "bold"), bg="#f4f4f4").pack(pady=(15, 5))
-        ent_monto = tk.Entry(top, font=("arial", 12), width=30)
-        ent_monto.pack()
+            tk.Label(top, text="Monto a Invertir ($):", font=("arial", 10, "bold"), bg="#f4f4f4").pack(pady=(15, 5))
+            ent_monto = tk.Entry(top, font=("arial", 12), width=30)
+            ent_monto.pack()
 
-        def procesar_capital():
-            desc = ent_desc.get().strip()
-            try:
-                monto = float(ent_monto.get())
-            except ValueError:
-                messagebox.showerror("Error", "El monto debe ser un número válido.", parent=top)
-                return
-            
-            if not desc or monto <= 0:
-                messagebox.showerror("Error", "Complete los campos. El monto debe ser mayor a cero.", parent=top)
-                return
+            def procesar_capital():
+                desc = ent_desc.get().strip()
+                try:
+                    monto = float(ent_monto.get())
+                except ValueError:
+                    messagebox.showerror("Error", "El monto debe ser un número válido.", parent=top)
+                    return
+                
+                if not desc or monto <= 0:
+                    messagebox.showerror("Error", "Complete los campos. El monto debe ser mayor a cero.", parent=top)
+                    return
 
-            exito, msj = ctrl.registrar_inversion(desc, monto)
-            if exito:
-                messagebox.showinfo("Éxito", msj, parent=top)
-                top.destroy()
-                self.actualizar_pantalla()
-            else:
-                messagebox.showerror("Error", msj, parent=top)
+                exito, msj = ctrl.registrar_inversion(desc, monto)
+                if exito:
+                    messagebox.showinfo("Éxito", msj, parent=top)
+                    top.destroy()
+                    self.actualizar_pantalla()
+                else:
+                    messagebox.showerror("Error", msj, parent=top)
 
-        tk.Button(top, text="Ingresar Capital al Sistema", font=("arial", 11, "bold"), bg="#4CAF50", fg="white", cursor="hand2", command=procesar_capital).pack(pady=20)
+            tk.Button(top, text="Ingresar Capital al Sistema", font=("arial", 11, "bold"), bg="#4CAF50", fg="white", cursor="hand2", command=procesar_capital).pack(pady=20)
