@@ -51,17 +51,17 @@ class Proveedor(tk.Frame):
         self.entry_contacto = tk.Entry(labelproveedor, font="arial 14")
         self.entry_contacto.place(x=10, y=230, width=230, height=30)
 
-        self.boton_guardar = tk.Button(labelproveedor, text="Guardar", font="arial 14 bold", bg="#4CAF50", fg="white",command=self.guardar_nuevo_proveedor)
-        self.boton_guardar.place(x=10, y=420, width=230, height=40)
-
-        self.boton_modificar = tk.Button(labelproveedor, text="Actualizar", font="arial 14 bold", bg="#2196F3", fg="white", command=self.modificar_proveedor_ui)
+        self.boton_modificar = tk.Button(labelproveedor, text="Actualizar", font="arial 14 bold", bg="#4CAF50", fg="white", command=self.modificar_proveedor_ui)
         self.boton_modificar.place(x=10, y=310, width=230, height=40)
+
+        self.boton_limpiar = tk.Button(labelproveedor, text="Limpiar", font="arial 14 bold", bg="#2196F3", fg="white", command=self.limpiar_formulario_proveedor)
+        self.boton_limpiar.place(x=10, y=360, width=230, height=40)
+
+        self.boton_guardar = tk.Button(labelproveedor, text="Guardar", font="arial 14 bold", bg="#BA48D6", fg="white",command=self.guardar_nuevo_proveedor)
+        self.boton_guardar.place(x=10, y=420, width=230, height=40)
 
         self.boton_eliminar = tk.Button(labelproveedor, text="Eliminar", font="arial 14 bold", bg="#F44336", fg="white", command=self.eliminar_proveedor_ui)
         self.boton_eliminar.place(x=10, y=470, width=230, height=40)
-
-        self.boton_limpiar = tk.Button(labelproveedor, text="Limpiar", font="arial 14 bold", bg="#f44336", fg="white", command=self.limpiar_formulario_proveedor)
-        self.boton_limpiar.place(x=10, y=360, width=230, height=40)
 
         self.cargar_proveedores()
 

@@ -16,7 +16,7 @@ class Container(tk.Frame):
     def __init__(self, padre, controller):
         super().__init__(padre)
         self.controller = controller
-        
+        self.alertas_mostradas = False
         self.frames={}
         self.buttons=[]
         
@@ -58,14 +58,18 @@ class Container(tk.Frame):
 
     def ventas(self):
         self.show_frames(Ventas)
+
     def inventario(self):
         self.show_frames(Inventario)
         instancia_inventario = self.frames.get(Inventario)
         
         if instancia_inventario:
-            instancia_inventario.verificar_alertas_stock()
-            instancia_inventario.verificar_alertas_vencimiento()
-            
+            if not self.alertas_mostradas:
+                instancia_inventario.verificar_alertas_stock()
+                instancia_inventario.verificar_alertas_vencimiento()
+                
+                self.alertas_mostradas = True
+
     def clientes(self):
         self.show_frames(Clientes)
     def finanzas(self):
