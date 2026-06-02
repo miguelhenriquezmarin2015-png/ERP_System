@@ -106,7 +106,10 @@ class Informacion(tk.Frame):
 
         #aparte
         self.boton_info=tk.Button(self,text="Informacion del negocio",font="arial 14 bold",bg="#BA48D6",fg="white",command=self.info_negocio)
-        self.boton_info.place(x=20, y=540, width=400, height=40)
+        self.boton_info.place(x=20, y=540, width=300, height=40)
+
+        self.boton_limp=tk.Button(self,text="Limpiar",font="arial 14 bold",bg="#FF9800",fg="white",command=self.limpiar_informacion)
+        self.boton_limp.place(x=430, y=540, width=300, height=40)
 
         self.cargar_perfil_existente()
     

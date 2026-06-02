@@ -462,7 +462,6 @@ def exportar_ventas_pdf(modo):
     elementos.append(tabla_pdf)
 
     doc.build(elementos)
-    #hola que hace
     return ruta_destino_completa
 
 def guardar_venta_completa(numero_factura, cliente, lista_productos, total):
@@ -857,7 +856,8 @@ def generar_csv_pedido(nombre_proveedor, lista_productos, total_general):
         
     return ruta_destino
 
-    #Finanzas
+#Finanzas
+
 def calcular_balance_general():
     conn = conectar()
     cursor = conn.cursor()
@@ -983,6 +983,7 @@ def obtener_saldo_fondo(nombre_fondo):
         return 0.0
     finally:
         conn.close()
+
 def obtener_precio_actual_producto(nombre_producto):
     conn = conectar()
     cursor = conn.cursor()
@@ -996,6 +997,7 @@ def obtener_precio_actual_producto(nombre_producto):
         conn.close()
 
 def procesar_recepcion_pedido(id_pedido, nombre_producto, cantidad_recibida, nuevo_precio, motivo_faltante):
+
     conn = conectar()
     cursor = conn.cursor()
     try:

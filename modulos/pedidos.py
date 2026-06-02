@@ -67,7 +67,18 @@ class Pedidos(tk.Frame):
         self.combo_formato = ttk.Combobox(labelframe, textvariable=self.formato_var, values=["PDF", "CSV", "Ambos (PDF y CSV)"])
         self.combo_formato.place(x=590, y=10, width=180, height=40)
 
-        self.label_saldo=tk.Label(labelframe, text="Saldo Fondo Reposición: $0.00", font="arial 14 bold", bg="#C6D9E3")
+        # ver saldo
+        self.saldo_var = tk.StringVar()
+        saldo_actual = ctrl.obtener_saldo_fondo("Fondo Reposición") 
+        if isinstance(saldo_actual, tuple) and saldo_actual:
+            saldo_num = float(saldo_actual[0])
+        elif saldo_actual is not None:
+            saldo_num = float(saldo_actual)
+        else:
+            saldo_num = 0.00
+        self.saldo_var.set(f"Saldo Fondo Reposición: ${saldo_num:,.2f}")
+
+        self.label_saldo = tk.Label(labelframe, textvariable=self.saldo_var, font="arial 14 bold", bg="#C6D9E3")
         self.label_saldo.place(x=810, y=10)
 
         self.canvas_frame = tk.Frame(self, bg="#FFFFFF", bd=2, relief="groove")
@@ -306,6 +317,17 @@ class Pedidos(tk.Frame):
         
         if self.lbl_total_orden:
             self.lbl_total_orden.config(text=f"Total Estimado: ${total_acumulado:.2f}")
+
+    def refrescar_saldo(self):
+        nuevo_saldo = ctrl.obtener_saldo()
+        
+        if isinstance(nuevo_saldo, tuple) and nuevo_saldo:
+            saldo_num = float(nuevo_saldo[0]) 
+        elif nuevo_saldo is not None:
+            saldo_num = float(nuevo_saldo)
+        else:
+            saldo_num = 0.00
+        self.saldo_var.set(f"Saldo Fondo Reposición: ${saldo_num:,.2f}")
 
     """def cargar_catalogo_pedido(self, event=None):
     
