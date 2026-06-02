@@ -533,7 +533,6 @@ class Ventas(tk.Frame):
         self.entry_cantidad.delete(0, "end")
         self.entry_cantidad.insert(0, "1")
 
-
         self.label_stock=tk.Label(labelframe,text="stock:",font="arial 14 bold",bg="#C6D9E3")
         self.label_stock.place(x=400,y=60)
 

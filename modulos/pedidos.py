@@ -52,7 +52,7 @@ class Pedidos(tk.Frame):
     def widgets(self):
         
         labelframe = LabelFrame(self, text="Pedidos", font="arial 20 bold", bg="#C6D9E3")
-        labelframe.place(x=20, y=20, width=400, height=100)
+        labelframe.place(x=20, y=20, width=1160, height=100)
 
         lavel_proveedor = Label(labelframe, text="Proveedor:", font="arial 14 bold", bg="#C6D9E3")
         lavel_proveedor.place(x=10, y=10)
@@ -61,11 +61,14 @@ class Pedidos(tk.Frame):
         self.entry_proveedor.place(x=130, y=10, width=200, height=40)
         self.entry_proveedor.bind("<KeyRelease>", self.programar_filtrado)
 
-        tk.Label(labelframe, text="Formato Exportación:", font="arial 10 bold", bg="#C6D9E3").place(x=460, y=0)
+        tk.Label(labelframe, text="Formato Exportación:", font="arial 14 bold", bg="#C6D9E3").place(x=370, y=10)
         
         self.formato_var = tk.StringVar(value="Ambos (PDF y CSV)")
         self.combo_formato = ttk.Combobox(labelframe, textvariable=self.formato_var, values=["PDF", "CSV", "Ambos (PDF y CSV)"])
-        self.combo_formato.place(x=460, y=25, width=150, height=30)
+        self.combo_formato.place(x=590, y=10, width=180, height=40)
+
+        self.label_saldo=tk.Label(labelframe, text="Saldo Fondo Reposición: $0.00", font="arial 14 bold", bg="#C6D9E3")
+        self.label_saldo.place(x=810, y=10)
 
         self.canvas_frame = tk.Frame(self, bg="#FFFFFF", bd=2, relief="groove")
         self.canvas_frame.place(x=20, y=150, width=1160, height=400)
