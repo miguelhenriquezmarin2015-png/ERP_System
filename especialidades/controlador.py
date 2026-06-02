@@ -1028,3 +1028,32 @@ def procesar_recepcion_pedido(id_pedido, nombre_producto, cantidad_recibida, nue
         return False, f"Error al procesar recepción: {str(e)}"
     finally:
         conn.close()
+
+def eliminar_proveedor(id_proveedor):
+    conn = conectar()
+    cursor = conn.cursor()
+    try:
+        cursor.execute("DELETE FROM proveedores WHERE id = %s", (id_proveedor,))
+        conn.commit()
+        return True, "Proveedor eliminado correctamente del sistema."
+    except Exception as e:
+        conn.rollback()
+        return False, f"Error al eliminar: {str(e)}"
+    finally:
+        conn.close()
+
+def actualizar_proveedor(id_proveedor, nombre, rif, contacto):
+    conn = conectar()
+    cursor = conn.cursor()
+    try:
+        cursor.execute("UPDATE proveedores SET nombre = %s, rif = %s, contacto = %s WHERE id = %s", 
+                       (nombre, rif, contacto, id_proveedor))
+        conn.commit()
+        return True, "Datos del proveedor actualizados con éxito."
+    except mysql.connector.IntegrityError:
+        return False, "El RIF ingresado ya pertenece a otro proveedor."
+    except Exception as e:
+        conn.rollback()
+        return False, f"Error al actualizar: {str(e)}"
+    finally:
+        conn.close()
