@@ -456,7 +456,6 @@ def exportar_ventas_pdf(modo):
     elementos.append(tabla_pdf)
 
     doc.build(elementos)
-    #hola que hace
     return ruta_destino_completa
 
 def guardar_venta_completa(numero_factura, cliente, lista_productos, total):
@@ -1032,24 +1031,31 @@ def procesar_recepcion_pedido(id_pedido, nombre_producto, cantidad_recibida, nue
     finally:
         conn.close()
 
-    import mysql.connector
-
-def obtener_saldo():
+def eliminar_proveedor(id_proveedor):
+    conn = conectar()
+    cursor = conn.cursor()
     try:
-        conn=conectar()
-        cursor = conn.cursor()
-        
-        query = "SELECT saldo FROM fondos LIMIT 1"
-        cursor.execute(query)
-        resultado = cursor.fetchone()
-        
-        cursor.close()
+        cursor.execute("DELETE FROM proveedores WHERE id = %s", (id_proveedor,))
+        conn.commit()
+        return True, "Proveedor eliminado correctamente del sistema."
+    except Exception as e:
+        conn.rollback()
+        return False, f"Error al eliminar: {str(e)}"
+    finally:
         conn.close()
-        
-        if resultado:
-            return resultado[0] 
-        return 0.00
-        
-    except mysql.connector.Error as err:
-        print(f"Error de base de datos: {err}")
-        return 0.00
+
+def actualizar_proveedor(id_proveedor, nombre, rif, contacto):
+    conn = conectar()
+    cursor = conn.cursor()
+    try:
+        cursor.execute("UPDATE proveedores SET nombre = %s, rif = %s, contacto = %s WHERE id = %s", 
+                       (nombre, rif, contacto, id_proveedor))
+        conn.commit()
+        return True, "Datos del proveedor actualizados con éxito."
+    except mysql.connector.IntegrityError:
+        return False, "El RIF ingresado ya pertenece a otro proveedor."
+    except Exception as e:
+        conn.rollback()
+        return False, f"Error al actualizar: {str(e)}"
+    finally:
+        conn.close()
