@@ -77,7 +77,8 @@ def crear_base_de_datos():
             "CREATE TABLE IF NOT EXISTS compras_proveedor ( id INT AUTO_INCREMENT PRIMARY KEY, id_proveedor INT NOT NULL, fecha DATETIME NOT NULL, total_pagado DECIMAL(12,2) NOT NULL, detalles TEXT, FOREIGN KEY(id_proveedor) REFERENCES proveedores(id) ON DELETE CASCADE )",
             "CREATE TABLE IF NOT EXISTS pedidos_pendientes ( id INT AUTO_INCREMENT PRIMARY KEY, id_proveedor INT NOT NULL, producto VARCHAR(255) NOT NULL, cantidad INT NOT NULL, monto_estimado DECIMAL(12,2) NOT NULL, estado VARCHAR(50) NOT NULL DEFAULT 'Pendiente', FOREIGN KEY(id_proveedor) REFERENCES proveedores(id) ON DELETE CASCADE )",
             "CREATE TABLE IF NOT EXISTS fondos ( id INT AUTO_INCREMENT PRIMARY KEY, nombre VARCHAR(100) NOT NULL UNIQUE, saldo DECIMAL(12,2) NOT NULL DEFAULT 0.0 )",
-            "CREATE TABLE IF NOT EXISTS egresos ( id INT AUTO_INCREMENT PRIMARY KEY, descripcion VARCHAR(255) NOT NULL, monto DECIMAL(12,2) NOT NULL, fecha DATETIME NOT NULL, id_fondo INT, FOREIGN KEY(id_fondo) REFERENCES fondos(id) )"
+            "CREATE TABLE IF NOT EXISTS egresos ( id INT AUTO_INCREMENT PRIMARY KEY, descripcion VARCHAR(255) NOT NULL, monto DECIMAL(12,2) NOT NULL, fecha DATETIME NOT NULL, id_fondo INT, FOREIGN KEY(id_fondo) REFERENCES fondos(id) )",
+            "CREATE TABLE IF NOT EXISTS inversiones ( id INT AUTO_INCREMENT PRIMARY KEY, descripcion VARCHAR(255) not NULL, monto DECIMAL(12,2) NOT NULL, fecha DATETIME NOT NULL )"
         ]
         for tabla in tablas:
             cursor.execute(tabla)
@@ -857,6 +858,18 @@ def generar_csv_pedido(nombre_proveedor, lista_productos, total_general):
     return ruta_destino
 
 #Finanzas
+def registrar_inversion(descripcion, monto):
+    conn = conectar()
+    cursor = conn.cursor()
+    try:
+        cursor.execute("INSERT INTO inversiones (descripcion, monto, fecha) VALUES (%s, %s, NOW())", (descripcion, monto))
+        conn.commit()
+        return True, "Capital registrado e ingresado al balance exitosamente."
+    except Exception as e:
+        conn.rollback()
+        return False, f"Error al registrar inversión: {e}"
+    finally:
+        conn.close()
 
 def calcular_balance_general():
     conn = conectar()
@@ -865,6 +878,12 @@ def calcular_balance_general():
         cursor.execute("SELECT SUM(total) FROM ventas")
         res_ventas = cursor.fetchone()[0]
         ingresos = float(res_ventas) if res_ventas else 0.0
+
+        cursor.execute("SELECT SUM(monto) FROM inversiones")
+        res_inversiones = cursor.fetchone()[0]
+        ingresos_inversiones = float(res_inversiones) if res_inversiones else 0.0
+
+        ingresos_totales = ingresos + ingresos_inversiones
 
         cursor.execute("SELECT SUM(total_pagado) FROM compras_proveedor")
         res_compras = cursor.fetchone()[0]
@@ -879,7 +898,7 @@ def calcular_balance_general():
         dinero_en_fondos = float(res_fondos) if res_fondos else 0.0
 
         egresos_totales = egresos_compras + otros_egresos
-        balance_disponible = ingresos - egresos_totales - dinero_en_fondos
+        balance_disponible = ingresos_totales - egresos_totales - dinero_en_fondos
 
         return {
             "ingresos": ingresos,
@@ -952,7 +971,11 @@ def obtener_movimientos(tipo="Todo"):
             cursor.execute("SELECT id, 'Ingreso', cliente, fecha, total FROM ventas")
             for f in cursor.fetchall():
                 movimientos.append((f[0], f[1], f[2], f[3].strftime("%Y-%m-%d %H:%M") if f[3] else "", f[4]))
-        
+
+            cursor.execute("SELECT id, 'Inversión / Capital', descripcion, fecha, monto FROM inversiones")
+            for f in cursor.fetchall():
+                movimientos.append ((f[0], f[1], f[2], f[3].strftime("%Y-%m-%d %H:%M") if f[3] else "", f[4]))
+
         if tipo in ["Todo", "Egresos"]:
             # Gastos manuales
             cursor.execute("SELECT id, 'Egreso', descripcion, fecha, monto FROM egresos")
