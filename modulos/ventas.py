@@ -24,17 +24,22 @@ class Ventas(tk.Frame):
         self.entry_producto['values'] = lista_completa
 
     def cargar_productos(self, event=None):
+        if hasattr(self, '_timer_producto_id') and self._timer_producto_id:
+            self.after_cancel(self._timer_producto_id)
+            
+        self._timer_producto_id = self.after(1000, self.ejecutar_busqueda_producto_hilo)
+
+    def ejecutar_busqueda_producto_hilo(self):
         texto_escrito = self.entry_producto.get()
         
         if texto_escrito == "":
             self.inicializar_productos()
             return
-
+            
         def buscar_en_segundo_plano():
             lista_filtrada = ctrl.filtrar_nombre(texto_escrito)
-            
             self.after(0, lambda: self.actualizar_interfaz_combo(lista_filtrada))
-
+            
         hilo = threading.Thread(target=buscar_en_segundo_plano)
         hilo.daemon = True
         hilo.start()
@@ -43,8 +48,8 @@ class Ventas(tk.Frame):
         self.entry_producto['values'] = lista_filtrada
         
         if lista_filtrada:
-            self.entry_producto.event_generate("<<ComboboxDropdown>>")
-            self.entry_producto.icursor(tk.END)
+            self.entry_producto.event_generate("<Down>")  
+            self.entry_producto.icursor(tk.END) 
     
     def actualizar_datos_producto(self, event=None):
         producto_seleccionado = self.entry_producto.get()
@@ -75,6 +80,12 @@ class Ventas(tk.Frame):
         self.entry_cliente['values'] = lista_nombres
 
     def filtrar_clientes(self, event=None):
+        if hasattr(self, '_timer_cliente_id') and self._timer_cliente_id:
+            self.after_cancel(self._timer_cliente_id)
+        
+        self._timer_cliente_id = self.after(1000, self.ejecutar_busqueda_hilo)
+
+    def ejecutar_busqueda_hilo(self):
         texto_escrito = self.entry_cliente.get()
         
         if texto_escrito == "":
@@ -83,7 +94,6 @@ class Ventas(tk.Frame):
 
         def buscar_clientes_segundo_plano():
             lista_filtrada = ctrl.filtrar_clientes_por_nombre(texto_escrito)
-            
             self.after(0, lambda: self.actualizar_interfaz_clientes(lista_filtrada))
 
         hilo = threading.Thread(target=buscar_clientes_segundo_plano)
@@ -94,7 +104,8 @@ class Ventas(tk.Frame):
         self.entry_cliente['values'] = lista_filtrada
         
         if lista_filtrada:
-            self.entry_cliente.event_generate("<<ComboboxDropdown>>")
+            # --- CAMBIA ESTA LÍNEA ---
+            self.entry_cliente.event_generate("<Down>") 
             self.entry_cliente.icursor(tk.END)
 
     def agregar_al_carrito(self):
@@ -501,7 +512,7 @@ class Ventas(tk.Frame):
         label_cliente.place(x=10,y=10)
         self.entry_cliente=ttk.Combobox(labelframe,font="arial 14 bold")
         self.entry_cliente.bind("<<ComboboxSelected>>", self.cargar_clientes)
-        self.entry_cliente.place(x=110,y=10,width=200,height=40)
+        self.entry_cliente.place(x=110, y=10, width=200, height=40)
         self.cargar_clientes()
         self.entry_cliente.bind("<KeyRelease>", self.filtrar_clientes)
 

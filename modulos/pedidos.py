@@ -10,7 +10,16 @@ class Pedidos(tk.Frame):
         self.controller=controller
         self.lbl_total_orden = None
         self.widgets()
-        
+        self.bind("<FocusIn>", self.al_recuperar_foco)
+
+    def al_recuperar_foco(self, event=None):
+        if event and event.widget != self:
+            return
+            
+        if hasattr(self, 'todos_los_proveedores'):
+            del self.todos_los_proveedores
+
+        self.cargar_proveedores()
 
     def cargar_proveedores(self, event=None):
         proveedores=ctrl.obtener_nombres_proveedores()
@@ -19,8 +28,7 @@ class Pedidos(tk.Frame):
     def filtrar_proveedores(self, event=None):
         texto_buscado = self.entry_proveedor.get().lower().strip()
         
-        if not hasattr(self, 'todos_los_proveedores') or not self.todos_los_proveedores:
-            self.todos_los_proveedores = ctrl.obtener_nombres_proveedores()
+        self.todos_los_proveedores = ctrl.obtener_nombres_proveedores()
         
         if texto_buscado == "":
             self.entry_proveedor['values'] = self.todos_los_proveedores
@@ -30,6 +38,16 @@ class Pedidos(tk.Frame):
                 if texto_buscado in str(prov).lower()
             ]
             self.entry_proveedor['values'] = proveedores_filtrados
+
+    def programar_filtrado(self, event=None):
+        if hasattr(self, '_timer_id') and self._timer_id:
+            self.after_cancel(self._timer_id)
+        
+        self._timer_id = self.after(1500, self.ejecutar_filtro_y_abrir)
+
+    def ejecutar_filtro_y_abrir(self):
+        self.filtrar_proveedores()
+        self.entry_proveedor.event_generate("<Down>")
 
     def widgets(self):
         
@@ -41,7 +59,7 @@ class Pedidos(tk.Frame):
         
         self.entry_proveedor = ttk.Combobox(labelframe, font="arial 14 bold")
         self.entry_proveedor.place(x=130, y=10, width=200, height=40)
-        self.entry_proveedor.bind("<KeyRelease>", lambda event: self.filtrar_proveedores())
+        self.entry_proveedor.bind("<KeyRelease>", self.programar_filtrado)
 
         tk.Label(labelframe, text="Formato Exportación:", font="arial 10 bold", bg="#C6D9E3").place(x=460, y=0)
         
@@ -84,7 +102,7 @@ class Pedidos(tk.Frame):
         self.btn_confirmar.pack(side="right", padx=5, pady=5)
 
         self.entry_proveedor.bind("<<ComboboxSelected>>", self.cargar_catalogo_pedido)
-        self.entry_proveedor.bind("<KeyRelease>", self.filtrar_proveedores)
+        self.entry_proveedor.bind("<KeyRelease>", self.programar_filtrado)
         self.cargar_proveedores()
     
     def cargar_catalogo_pedido(self, event=None):
