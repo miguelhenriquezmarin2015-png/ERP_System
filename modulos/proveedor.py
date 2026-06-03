@@ -369,12 +369,20 @@ class Proveedor(tk.Frame):
     def ver_historial_compras(self, id_proveedor):
         top_compras = tk.Toplevel(self)
         top_compras.title("Historial de Compras Realizadas")
-        top_compras.geometry("700x450+400+150")
+        top_compras.geometry("880x500+400+150") 
         top_compras.config(bg="#C6D9E3")
         top_compras.grab_set()
 
-        frame_grid = tk.Frame(top_compras, bg="#C6D9E3")
-        frame_grid.pack(padx=20, pady=20, fill="both", expand=True)
+        canvas = tk.Canvas(top_compras, bg="#C6D9E3", highlightthickness=0)
+        scrollbar = ttk.Scrollbar(top_compras, orient="vertical", command=canvas.yview)
+        frame_grid = tk.Frame(canvas, bg="#C6D9E3")
+
+        frame_grid.bind("<Configure>", lambda e: canvas.configure(scrollregion=canvas.bbox("all")))
+        canvas.create_window((0, 0), window=frame_grid, anchor="nw", width=840)
+        canvas.configure(yscrollcommand=scrollbar.set)
+
+        canvas.pack(side="left", fill="both", expand=True, padx=(10,0), pady=20)
+        scrollbar.pack(side="right", fill="y", padx=(0,10), pady=20)
 
         headers = ["ID Compra", "Fecha de Transacción", "Monto Total Pagado", "Detalles / Notas"]
         for col_idx, text in enumerate(headers):
@@ -392,11 +400,26 @@ class Proveedor(tk.Frame):
 
             valores = [id_c, fecha, f"${total:,.2f}", notas]
             for c_idx, val in enumerate(valores):
-                tk.Label(frame_grid, text=val, font=("arial", 11), bg=c_fila, relief="groove", anchor="w" if c_idx==3 else "center", padx=5, pady=4).grid(row=r_idx, column=c_idx, sticky="nsew")
-
+                lbl = tk.Label(
+                    frame_grid, 
+                    text=val, 
+                    font=("arial", 11), 
+                    bg=c_fila, 
+                    relief="groove", 
+                    anchor="w" if c_idx==3 else "center", 
+                    justify="left" if c_idx==3 else "center",
+                    padx=5, 
+                    pady=4
+                )
+                
+                if c_idx == 3:
+                    lbl.config(wraplength=380) 
+                    
+                lbl.grid(row=r_idx, column=c_idx, sticky="nsew")
+        
         for i in range(4):
-            frame_grid.grid_columnconfigure(i, weight=1 if i!=3 else 2)
-            
+            frame_grid.grid_columnconfigure(i, weight=1 if i!=3 else 3)
+
     def ver_pedidos_pendientes(self, id_proveedor):
         top_pedidos = tk.Toplevel(self)
         top_pedidos.title("Órdenes y Pedidos Pendientes")
