@@ -86,7 +86,7 @@ class Clientes(tk.Frame):
 
     def widgets(self):
         canvas_clientes=tk.Label(self,text="Clientes",font="arial 20 bold",bg="#C6D9E3")
-        canvas_clientes.place(x=300,y=20,width=890,height=625)
+        canvas_clientes.place(x=300,y=20,width=890,height=600)
 
         self.canvas=tk.Canvas(canvas_clientes)
         self.scrollbar=Scrollbar(canvas_clientes,orient="vertical",command=self.canvas.yview)
@@ -106,7 +106,7 @@ class Clientes(tk.Frame):
 
 #agregar clientes
         frame_agregar=LabelFrame(self,text="Clientes",font="arial 12 bold",bg="#C6D9E3")
-        frame_agregar.place(x=20,y=20,width=250,height=410)
+        frame_agregar.place(x=20,y=20,width=250,height=390)
 
         self.label_nombre=tk.Label(frame_agregar,text="Nombre",font="arial 12 bold",bg="#C6D9E3")
         self.label_nombre.place(x=5,y=5,width=220,height=40)
@@ -135,7 +135,7 @@ class Clientes(tk.Frame):
 #obsiones
 
         lblframa_botones=LabelFrame(self,text="Opciones",font="arial 12 bold",bg="#C6D9E3")
-        lblframa_botones.place(x=20,y=420,width=250,height=210)
+        lblframa_botones.place(x=20,y=420,width=250,height=200)
 
         bt1=tk.Button(lblframa_botones,text="Guardar",font="arial 12 bold",bg="#4CAF50",fg="white",command=self.nuevo_cliente)
         bt1.place(x=10,y=10,width=220,height=40)

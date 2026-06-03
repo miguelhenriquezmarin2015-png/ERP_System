@@ -289,7 +289,6 @@ class Informacion(tk.Frame):
                     menu_popup.add_command(label="✏️ Editar", command=lambda: self.modificar_empleado_ventana(e))
                     menu_popup.add_command(label="🗑️ Eliminar", command=lambda: self.eliminar_empleado_accion(id_b, nom_b))
                     
-                    # Posicionar el menú exactamente debajo del botón de opciones
                     x = b.winfo_rootx()
                     y = b.winfo_rooty() + b.winfo_height()
                     menu_popup.post(x, y)
@@ -417,7 +416,7 @@ class Informacion(tk.Frame):
     def info_negocio(self):
         toplabel = tk.Toplevel(self)
         toplabel.title("Información del Negocio")
-        toplabel.geometry("750x600+450+80")
+        toplabel.geometry("630x550+450+80")
         toplabel.config(bg="#C6D9E3")
         toplabel.resizable(False, False)
         toplabel.transient(self.master)
@@ -478,37 +477,36 @@ class Informacion(tk.Frame):
             self.boton_guardar.config(text="Guardar Información", bg="#4CAF50")
 
     def limpiar_informacion(self):
-        
-        if hasattr(self, 'entry_user') and self.entry_user:
+        if hasattr(self, 'entry_user') and self.entry_user and self.entry_user.winfo_exists():
             self.entry_user.delete(0, tk.END)
-        if hasattr(self, 'entry_pass') and self.entry_pass:
+        if hasattr(self, 'entry_pass') and self.entry_pass and self.entry_pass.winfo_exists():
             self.entry_pass.delete(0, tk.END)
-        if hasattr(self, 'entry_admin_nombre') and self.entry_admin_nombre:
+        if hasattr(self, 'entry_admin_nombre') and self.entry_admin_nombre and self.entry_admin_nombre.winfo_exists():
             self.entry_admin_nombre.delete(0, tk.END)
-        if hasattr(self, 'entry_admin_cedula') and self.entry_admin_cedula:
+        if hasattr(self, 'entry_admin_cedula') and self.entry_admin_cedula and self.entry_admin_cedula.winfo_exists():
             self.entry_admin_cedula.delete(0, tk.END)
-        if hasattr(self, 'entry_admin_telefono') and self.entry_admin_telefono:
+        if hasattr(self, 'entry_admin_telefono') and self.entry_admin_telefono and self.entry_admin_telefono.winfo_exists():
             self.entry_admin_telefono.delete(0, tk.END)
-        if hasattr(self, 'entry_admin_correo') and self.entry_admin_correo:
+        if hasattr(self, 'entry_admin_correo') and self.entry_admin_correo and self.entry_admin_correo.winfo_exists():
             self.entry_admin_correo.delete(0, tk.END)
 
-        if hasattr(self, 'entry_nom') and self.entry_nom:
+        if hasattr(self, 'entry_nom') and self.entry_nom and self.entry_nom.winfo_exists():
             self.entry_nom.delete(0, tk.END)
-        if hasattr(self, 'entry_ci') and self.entry_ci:
+        if hasattr(self, 'entry_ci') and self.entry_ci and self.entry_ci.winfo_exists():
             self.entry_ci.delete(0, tk.END)
-        if hasattr(self, 'entry_tel') and self.entry_tel:
+        if hasattr(self, 'entry_tel') and self.entry_tel and self.entry_tel.winfo_exists():
             self.entry_tel.delete(0, tk.END)
-        if hasattr(self, 'entry_email') and self.entry_email:
+        if hasattr(self, 'entry_email') and self.entry_email and self.entry_email.winfo_exists():
             self.entry_email.delete(0, tk.END)
-        if hasattr(self, 'entry_usu') and self.entry_usu:
+        if hasattr(self, 'entry_usu') and self.entry_usu and self.entry_usu.winfo_exists():
             self.entry_usu.delete(0, tk.END)
-        if hasattr(self, 'entry_passw') and self.entry_passw:
+        if hasattr(self, 'entry_passw') and self.entry_passw and self.entry_passw.winfo_exists():
             self.entry_passw.delete(0, tk.END)
-            
-        if hasattr(self, 'entry_sueldo') and self.entry_sueldo:
+
+        if hasattr(self, 'entry_sueldo') and self.entry_sueldo and self.entry_sueldo.winfo_exists():
             self.entry_sueldo.delete(0, tk.END)
 
-        if hasattr(self, 'combo_rol') and self.combo_rol:
+        if hasattr(self, 'combo_rol') and self.combo_rol and self.combo_rol.winfo_exists():
             self.combo_rol.current(0)
 
     def descargar_empleados(self):
