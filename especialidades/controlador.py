@@ -633,17 +633,43 @@ def obtener_nombres_clientes():
     lista_clientes = [cliente[0] for cliente in resultados]
     return lista_clientes
 
-def tipo_cliente(nombre_cliente):
+def tipo_cliente(cedula):
     conexion = conectar()
     cursor = conexion.cursor()
     
-    query = "SELECT tipo FROM clientes WHERE nombre = %s"
-    cursor.execute(query, (nombre_cliente,))
+    query = "SELECT tipo FROM clientes WHERE cedula = %s"
+    cursor.execute(query, (cedula,))
     resultado = cursor.fetchone()
     
     conexion.close()
     
     return resultado[0] if resultado else 'Natural'
+
+def buscar_cliente_por_cedula(cedula):
+    conn = conectar()
+    cursor = conn.cursor()
+    try:
+        cursor.execute("SELECT nombre, telefono FROM clientes WHERE cedula = %s", (cedula,))
+        return cursor.fetchone()
+    except Exception:
+        return None
+    finally:
+        conn.close()
+
+def verificar_y_guardar_cliente(cedula, nombre, telefono):
+    conn = conectar()
+    cursor = conn.cursor()
+    try:
+        cursor.execute("SELECT id FROM clientes WHERE cedula = %s", (cedula,))
+        # Si no existe, lo creamos automáticamente
+        if not cursor.fetchone():
+            cursor.execute("INSERT INTO clientes (nombre, telefono, cedula, tipo) VALUES (%s, %s, %s, 'Natural')", (nombre, telefono, cedula))
+            conn.commit()
+    except Exception as e:
+        conn.rollback()
+        print(f"Error al verificar/guardar cliente: {e}")
+    finally:
+        conn.close()
 
 #proveedores----
 def obtener_proveedores():

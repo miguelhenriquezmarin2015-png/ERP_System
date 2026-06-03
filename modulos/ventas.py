@@ -89,43 +89,36 @@ class Ventas(tk.Frame):
             self.stock_actual = datos[2]   
             self.label_stock.config(text=f"stock: {self.stock_actual}")
 
-    def cargar_clientes(self, event=None):
-        lista_nombres = ctrl.obtener_nombres_clientes()
-        self.entry_cliente['values'] = lista_nombres
-
-    def filtrar_clientes(self, event=None):
-        if hasattr(self, '_timer_cliente_id') and self._timer_cliente_id:
-            self.after_cancel(self._timer_cliente_id)
-        
-        self._timer_cliente_id = self.after(1000, self.ejecutar_busqueda_hilo)
-
-    def ejecutar_busqueda_hilo(self):
-        texto_escrito = self.entry_cliente.get()
-        
-        if texto_escrito == "":
-            self.cargar_clientes()
+    def buscar_cliente_enter(self, event=None):
+        cedula = self.entry_cedula.get().strip()
+        if not cedula:
+            messagebox.showwarning("Atención", "Escriba una cédula antes de presionar Enter.")
             return
 
-        def buscar_clientes_segundo_plano():
-            lista_filtrada = ctrl.filtrar_clientes_por_nombre(texto_escrito)
-            self.after(0, lambda: self.actualizar_interfaz_clientes(lista_filtrada))
+        cliente = ctrl.buscar_cliente_por_cedula(cedula)
 
-        hilo = threading.Thread(target=buscar_clientes_segundo_plano)
-        hilo.daemon = True
-        hilo.start()
+        self.label_nombre_cli.place(x=240, y=10)
+        self.entry_nombre_cli.place(x=325, y=10, width=200, height=40)
+        self.label_tel_cli.place(x=540, y=10)
+        self.entry_tel_cli.place(x=600, y=10, width=150, height=40)
 
-    def actualizar_interfaz_clientes(self, lista_filtrada):
-        self.entry_cliente['values'] = lista_filtrada
-        
-        if lista_filtrada:
-            try:
-                self.entry_cliente.event_generate("<Down>") 
-            except tk.TclError:
-                pass
-            self.entry_cliente.icursor(tk.END)
+        self.entry_nombre_cli.config(state="normal")
+        self.entry_tel_cli.config(state="normal")
+        self.entry_nombre_cli.delete(0, tk.END)
+        self.entry_tel_cli.delete(0, tk.END)
+
+        if cliente:
+            self.entry_nombre_cli.insert(0, cliente[0])
+            self.entry_tel_cli.insert(0, cliente[1])
+            self.entry_producto.focus() # Salta al producto si ya existe
+        else:
+            messagebox.showinfo("Nuevo Cliente", "Cédula no registrada. Llene los datos y el sistema lo guardará al pagar.")
+            self.entry_nombre_cli.focus()
+    
 
     def agregar_al_carrito(self):
-        cliente = self.entry_cliente.get()
+        cedula = getattr(self, 'entry_cedula', None) and self.entry_cedula.get().strip()
+        nombre = getattr(self, 'entry_nombre_cli', None) and self.entry_nombre_cli.get().strip()
         producto = self.entry_producto.get()
         
         try:
@@ -134,8 +127,8 @@ class Ventas(tk.Frame):
             messagebox.showerror("Error", "Por favor, ingrese una cantidad válida.")
             return
             
-        if not cliente:
-            messagebox.showerror("Error", "Por favor, seleccione un cliente.")
+        if not cedula or not nombre:
+            messagebox.showerror("Error", "Primero coloque la cédula, presione Enter y verifique el nombre.")
             return
             
         if not producto:
@@ -178,18 +171,21 @@ class Ventas(tk.Frame):
             subtotal_formateado = "{:.2f}".format(subtotal)
             self.tre.insert("", "end", values=(
                 self.numero_factura, 
-                cliente, 
+                f"{nombre} ({cedula})", 
                 producto, 
                 f"{self.precio_actual:.2f}", 
                 cantidad, 
                 subtotal_formateado
             ))
 
-        self.entry_cliente.config(state="disabled")
         ctrl.reducir_stock(producto, cantidad)
         self.stock_actual -= cantidad
         self.label_stock.config(text=f"stock: {self.stock_actual}")
         self.actualizar_total_carrito()
+
+        self.entry_cedula.config(state="disabled")
+        self.entry_nombre_cli.config(state="disabled")
+        self.entry_tel_cli.config(state="disabled")
 
     def actualizar_total_carrito(self):
         total_acumulado = 0.0
@@ -202,12 +198,12 @@ class Ventas(tk.Frame):
             except (IndexError, ValueError):
                 continue
 
-        cliente_seleccionado = self.entry_cliente.get()
-        
-        porcentaje_iva = 0.16 
-        
-        if cliente_seleccionado:
-            tipo_cliente = ctrl.tipo_cliente(cliente_seleccionado) 
+        cedula_seleccionada = self.entry_cedula.get().strip()
+
+        porcentaje_iva = 0.16
+
+        if cedula_seleccionada:
+            tipo_cliente = ctrl.tipo_cliente(cedula_seleccionada) 
             if tipo_cliente == "Jurídica":
                 porcentaje_iva = 0.16  
             elif tipo_cliente == "Natural":
@@ -246,8 +242,9 @@ class Ventas(tk.Frame):
             self.tre.delete(item)
             
         if not self.tre.get_children():
-            self.entry_cliente.config(state="normal")
-            self.entry_cliente.set("")
+            self.entry_cedula.config(state="normal")
+            self.entry_nombre_cli.config(state="normal")
+            self.entry_tel_cli.config(state="normal")
             
         if hasattr(self.entry_producto, 'delete'):
             self.entry_producto.delete(0, tk.END)
@@ -342,9 +339,7 @@ class Ventas(tk.Frame):
             self.label_stock.config(text=f"stock: {self.stock_actual}")
             
         self.actualizar_total_carrito()
-        self.entry_cliente.config(state="normal")
-        self.entry_cliente.set("")
-        
+                
         # Limpieza del combobox de producto
         if hasattr(self.entry_producto, 'delete'):
             self.entry_producto.delete(0, tk.END)
@@ -352,6 +347,19 @@ class Ventas(tk.Frame):
             self.entry_producto.set("")
             
         self.actualizar_datos_producto()
+
+        self.entry_cedula.config(state="normal")
+        self.entry_cedula.delete(0, tk.END)
+        
+        self.entry_nombre_cli.config(state="normal")
+        self.entry_tel_cli.config(state="normal")
+        self.entry_nombre_cli.delete(0, tk.END)
+        self.entry_tel_cli.delete(0, tk.END)
+        
+        self.label_nombre_cli.place_forget()
+        self.entry_nombre_cli.place_forget()
+        self.label_tel_cli.place_forget()
+        self.entry_tel_cli.place_forget()
 
     def realizar_pago(self):
         if self.total_venta_actual == 0.0:
@@ -394,29 +402,52 @@ class Ventas(tk.Frame):
 
         def confirmar_transaccion():
             try:
-                monto_ingresado = float(entry_costo.get())
+                pago_cliente = float(entry_costo.get())
             except ValueError:
-                messagebox.showerror("Error", "Por favor, ingrese un monto numérico válido.", parent=ventana_pago)
+                messagebox.showerror("Error", "Ingrese un monto numérico válido.", parent=ventana_pago)
                 return
-
-            if monto_ingresado < total_venta:
-                messagebox.showerror("Error", f"El monto es insuficiente. Falta: ${total_venta - monto_ingresado:.2f}", parent=ventana_pago)
-                return
-
-            cambio = monto_ingresado - total_venta
             
-            cliente_actual = self.entry_cliente.get()
-            ctrl.guardar_venta_completa(self.numero_factura, cliente_actual, lista_productos_guardar, total_venta)
+            if pago_cliente < total_venta:
+                messagebox.showerror("Error", "El pago es menor al total de la venta.", parent=ventana_pago)
+                return
+
+            cambio = pago_cliente - total_venta
+
+            self.entry_cedula.config(state="normal")
+            self.entry_nombre_cli.config(state="normal")
+            self.entry_tel_cli.config(state="normal")
+
+            cedula = self.entry_cedula.get().strip()
+            nombre = self.entry_nombre_cli.get().strip()
+            telefono = self.entry_tel_cli.get().strip()
+            
+            if not telefono:
+                telefono = "No registrado"
+            
+            ctrl.verificar_y_guardar_cliente(cedula, nombre, telefono)
+            ctrl.guardar_venta_completa(self.numero_factura, nombre, lista_productos_guardar, total_venta)
 
             messagebox.showinfo("Éxito", f"¡Pago procesado!\nCambio a entregar: ${cambio:.2f}", parent=ventana_pago)
 
+            for inst in self.master.frames.values():
+                if inst.__class__.__name__ == "Clientes" and hasattr(inst, 'cargar_clientes'):
+                    inst.cargar_clientes()
+                elif inst.__class__.__name__ == "Finanzas" and hasattr(inst, 'actualizar_pantalla'):
+                    inst.actualizar_pantalla()
+            
             self.tre.delete(*self.tre.get_children())
             self.numero_factura = self.obtener_num_factura()
             self.label_numero_factura.config(text=f"{self.numero_factura}")
             self.total_venta_actual = 0.0
             self.lable_precio_total.config(text="Precio Total: $0.00")
-            self.entry_cliente.config(state="normal")
-            self.entry_cliente.set("") 
+            
+            self.entry_cedula.delete(0, tk.END)
+            self.entry_nombre_cli.delete(0, tk.END)
+            self.entry_tel_cli.delete(0, tk.END)
+            self.label_nombre_cli.place_forget()
+            self.entry_nombre_cli.place_forget()
+            self.label_tel_cli.place_forget()
+            self.entry_tel_cli.place_forget()
             
             ventana_pago.destroy()
 
@@ -538,42 +569,43 @@ class Ventas(tk.Frame):
         labelframe=tk.LabelFrame(self,font="arial 12 bold",bg="#C6D9E3") 
         labelframe.place(x=25,y=30,width=1150,height=200)
 
-        label_cliente=tk.Label(labelframe,text="Cliente:",font="arial 14 bold",bg="#C6D9E3")
-        label_cliente.place(x=10,y=10)
-        self.entry_cliente=ttk.Combobox(labelframe,font="arial 14 bold")
-        self.entry_cliente.bind("<<ComboboxSelected>>", self.cargar_clientes)
-        self.entry_cliente.place(x=110, y=10, width=200, height=40)
-        self.cargar_clientes()
-        self.entry_cliente.bind("<KeyRelease>", self.filtrar_clientes)
+        label_cedula = tk.Label(labelframe, text="Cédula:", font="arial 14 bold", bg="#C6D9E3")
+        label_cedula.place(x=10, y=10)
+        
+        self.entry_cedula = tk.Entry(labelframe, font="arial 14 bold")
+        self.entry_cedula.place(x=90, y=10, width=130, height=40)
+        self.entry_cedula.bind("<Return>", self.buscar_cliente_enter)
+
+        self.label_nombre_cli = tk.Label(labelframe, text="Nombre:", font="arial 14 bold", bg="#C6D9E3")
+        self.entry_nombre_cli = tk.Entry(labelframe, font="arial 14 bold")
+        self.label_tel_cli = tk.Label(labelframe, text="Teléf:", font="arial 14 bold", bg="#C6D9E3")
+        self.entry_tel_cli = tk.Entry(labelframe, font="arial 14 bold")
 
         label_producto=tk.Label(labelframe,text="Producto:",font="arial 14 bold",bg="#C6D9E3")
-        label_producto.place(x=10,y=60)
+        label_producto.place(x=10, y=65)
         self.entry_producto=ttk.Combobox(labelframe,font="arial 14 bold")
         self.entry_producto.bind("<<ComboboxSelected>>", self.actualizar_datos_producto)
-        self.entry_producto.place(x=110,y=60,width=200,height=40)        
+        self.entry_producto.place(x=110, y=65, width=200, height=40)        
         self.inicializar_productos()
         self.entry_producto.bind("<KeyRelease>", self.cargar_productos)
-
+    
         label_cantidad = tk.Label(labelframe, text="Cantidad:", font="arial 14 bold", bg="#C6D9E3")
-        label_cantidad.place(x=400, y=10)
-        
+        label_cantidad.place(x=330, y=65)
         self.entry_cantidad = tk.Spinbox(labelframe, from_=0, to=100, font="arial 14 bold", bg="white", bd=0)
-        self.entry_cantidad.place(x=500, y=10, width=200, height=40)
-
+        self.entry_cantidad.place(x=430, y=65, width=80, height=40)
         self.entry_cantidad.delete(0, "end")
         self.entry_cantidad.insert(0, "1")
 
         self.label_stock=tk.Label(labelframe,text="stock:",font="arial 14 bold",bg="#C6D9E3")
-        self.label_stock.place(x=400,y=60)
+        self.label_stock.place(x=540, y=65)
 
         self.label_precio_unitario = tk.Label(self, text="Precio unitario: $0.00", font="arial 14 bold", bg="#C6D9E3")
         self.label_precio_unitario.place(x=775, y=40) 
 
-        label_factura=tk.Label(labelframe,text="Numero de Factura:",font="arial 14 bold",bg="#C6D9E3")
-        label_factura.place(x=750,y=60)
-
+        label_factura=tk.Label(labelframe,text="N° de Factura:",font="arial 14 bold",bg="#C6D9E3")
+        label_factura.place(x=780, y=10)
         self.label_numero_factura=tk.Label(labelframe,text=f"{self.numero_factura}",font="arial 14 bold",bg="#C6D9E3")
-        self.label_numero_factura.place(x=950,y=60)
+        self.label_numero_factura.place(x=930, y=10)
 
         boton_agregar=tk.Button(labelframe,text="Agregar al Carrito",font="arial 14 bold",bg="#4CAF50",fg="white",command=self.agregar_al_carrito)
         boton_agregar.place(x=100,y=135,width=200,height=40)
