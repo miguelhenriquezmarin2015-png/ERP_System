@@ -32,8 +32,10 @@ class Container(tk.Frame):
         
     def show_frames(self, ventas_clase):
         instancia_clientes = self.frames.get(Clientes)
-        if instancia_clientes: instancia_clientes.limpiar_formulario_cliente()
-        
+        if instancia_clientes: 
+            instancia_clientes.limpiar_formulario_cliente()
+            instancia_clientes.cargar_clientes()
+
         instancia_proveedor = self.frames.get(Proveedor)
         if instancia_proveedor: instancia_proveedor.limpiar_formulario_proveedor()
         
@@ -47,6 +49,10 @@ class Container(tk.Frame):
         if instancia_info:
             instancia_info.limpiar_informacion()
             
+        instancia_finanzas = self.frames.get(Finanzas)
+        if instancia_finanzas:
+            instancia_finanzas.actualizar_pantalla()
+
         frame = self.frames[ventas_clase]
         frame.tkraise()
 
