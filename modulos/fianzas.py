@@ -59,35 +59,58 @@ class Finanzas(tk.Frame):
     def cargar_movimientos(self):
         for widget in self.scrollbar_frame.winfo_children():
             widget.destroy()
-
+            
         headers = ["Tipo", "Descripción / Concepto", "Fecha y Hora", "Monto"]
         for col_idx, text in enumerate(headers):
-            tk.Label(self.scrollbar_frame, text=text, font=("arial", 12, "bold"), bg="#9FB8C7", fg="black", relief="groove", padx=5, pady=5).grid(row=0, column=col_idx, sticky="nsew")
-
-        movimientos = ctrl.obtener_movimientos(self.tipo_filtro)
-
-        if not movimientos:
-            tk.Label(self.scrollbar_frame, text="No hay movimientos para mostrar.", font=("arial", 12, "italic"), bg="#FFFFFF").grid(row=1, column=0, columnspan=4, pady=20)
-            return
-
-        for row_idx, mov in enumerate(movimientos, start=1):
-            color_fila = "#F0F4F8" if row_idx % 2 == 0 else "#FFFFFF"
-            id_m, tipo, desc, fecha, monto = mov
+            tk.Label(
+                self.scrollbar_frame, 
+                text=text, 
+                font=("arial", 12, "bold"), 
+                bg="#9FB8C7", 
+                fg="black", 
+                relief="groove", 
+                padx=10, 
+                pady=5
+            ).grid(row=0, column=col_idx, sticky="nsew")
             
-            color_texto = "#388E3C" if ("Ingreso" in tipo or "Inversión" in tipo) else "#D32F2F"
-
-            valores = [tipo, desc, fecha, f"${float(monto):,.2f}"]
-            for col_idx, valor in enumerate(valores):
-                tk.Label(
-                    self.scrollbar_frame, text=valor, font=("arial", 11), bg=color_fila, 
-                    fg=color_texto if col_idx == 3 or col_idx == 0 else "black",
-                    anchor="center" if col_idx in [0, 2] else ("w" if col_idx == 1 else "e"), padx=10, pady=6
-                ).grid(row=row_idx, column=col_idx, sticky="nsew")
-
-        self.scrollbar_frame.grid_columnconfigure(0, weight=1) 
-        self.scrollbar_frame.grid_columnconfigure(1, weight=3) 
-        self.scrollbar_frame.grid_columnconfigure(2, weight=2) 
-        self.scrollbar_frame.grid_columnconfigure(3, weight=1)
+        movimientos = ctrl.obtener_movimientos(self.tipo_filtro)
+        
+        if not movimientos:
+            tk.Label(
+                self.scrollbar_frame, 
+                text="No hay movimientos para mostrar.", 
+                font=("arial", 12, "italic"), 
+                bg="#FFFFFF"
+            ).grid(row=1, column=0, columnspan=4, pady=20, sticky="nsew")
+        else:
+            for row_idx, mov in enumerate(movimientos, start=1):
+                color_fila = "#F0F4F8" if row_idx % 2 == 0 else "#FFFFFF"
+                id_m, tipo, desc, fecha, monto = mov
+                
+                color_texto = "#388E3C" if "Ingreso" in tipo or "Inversión" in tipo else "#D32F2F"
+                
+                valores = [tipo, desc, fecha, f"${float(monto):,.2f}"]
+                for col_idx, valor in enumerate(valores):
+                    tk.Label(
+                        self.scrollbar_frame, 
+                        text=valor, 
+                        font=("arial", 11), 
+                        bg=color_fila,
+                        fg=color_texto if col_idx == 3 or col_idx == 0 else "black",
+                        anchor="center" if col_idx in [0, 2] else ("w" if col_idx == 1 else "e"), 
+                        padx=10, 
+                        pady=6
+                    ).grid(row=row_idx, column=col_idx, sticky="nsew")
+                
+        for i, w in enumerate([1, 3, 2, 1]):
+            self.scrollbar_frame.grid_columnconfigure(i, weight=w)
+            
+        try:
+            padre = self.scrollbar_frame.master
+            if hasattr(padre, 'grid_columnconfigure'):
+                padre.grid_columnconfigure(0, weight=1)
+        except Exception:
+            pass
 
     def registrar_gasto(self):
         top = tk.Toplevel(self)

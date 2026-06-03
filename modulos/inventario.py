@@ -24,11 +24,8 @@ class Inventario(tk.Frame):
                 scrollregion=self.canvas.bbox("all")
             )
         )
-        self.canvas.bind(
-            "<Configure>", 
-            lambda e: self.canvas.itemconfig(self.canvas.find_withtag("all")[0], width=e.width)
-        )
-        self.canvas.create_window((0,0),window=self.scrollbar_frame,anchor="nw")
+        self.window_id = self.canvas.create_window((0, 0), window=self.scrollbar_frame, anchor="nw")
+        self.canvas.bind("<Configure>", lambda e: self.canvas.itemconfig(self.window_id, width=e.width))
         self.canvas.configure(yscrollcommand=self.scrollbar.set)
         self.scrollbar.pack(side="right",fill="y")
         self.canvas.pack(side="left",fill="both",expand=True)
@@ -82,7 +79,12 @@ class Inventario(tk.Frame):
     def cargar_articulos(self, datos=None):
         for widget in self.scrollbar_frame.winfo_children():
             widget.destroy()
-
+            
+        if datos is not None:
+            articulos = datos
+        else:
+            articulos = ctrl.obtener_articulos()
+            
         headers = ["ID", "Nombre", "Costo", "Precio", "Stock", "Vencimiento", "Acción"]
         for col_idx, text in enumerate(headers):
             lbl_header = tk.Label(
@@ -93,18 +95,16 @@ class Inventario(tk.Frame):
                 fg="black",
                 relief="groove",
                 padx=10,
-                pady=5
+                pady=5,
+                anchor="center"
             )
             lbl_header.grid(row=0, column=col_idx, sticky="nsew")
-
-        if datos is not None:
-            articulos = datos
-        else:
-            articulos = ctrl.obtener_articulos()
-
+            
         if not articulos:
+            for i, w in enumerate([1, 5, 2, 2, 2, 3, 1]):
+                self.scrollbar_frame.grid_columnconfigure(i, weight=w)
             return
-
+            
         for row_idx, art in enumerate(articulos, start=1):
             color_fila = "#E1EBF0" if row_idx % 2 == 0 else "#F4F8FA"
             
@@ -115,16 +115,16 @@ class Inventario(tk.Frame):
             stock = art[4] if len(art) > 4 else 0
             perecedero = art[5] if len(art) > 5 else 0
             vencimiento = art[6] if len(art) > 6 else None
-
+            
             if perecedero == 1:
                 texto_vence = vencimiento if vencimiento else "Sin Fecha"
                 color_letras = "#D32F2F"
             else:
                 texto_vence = "No Aplica"
                 color_letras = "black"
-
-            valores_fila = [id_art, nombre, f"${float(costo):.2f}", f"${float(precio):.2f}", stock, texto_vence]
-
+                
+            valores_fila = [id_art, nombre, f"${float(costo):,.2f}", f"${float(precio):,.2f}", stock, texto_vence]
+            
             for col_idx, valor in enumerate(valores_fila):
                 lbl_dato = tk.Label(
                     self.scrollbar_frame,
@@ -138,7 +138,7 @@ class Inventario(tk.Frame):
                     pady=5
                 )
                 lbl_dato.grid(row=row_idx, column=col_idx, sticky="nsew")
-
+                
             btn_eliminar = tk.Button(
                 self.scrollbar_frame,
                 text="Borrar",
@@ -149,18 +149,24 @@ class Inventario(tk.Frame):
                 command=lambda id_a=id_art, nom=nombre: self.borrar_articulo(id_a, nom)
             )
             btn_eliminar.grid(row=row_idx, column=6, sticky="nsew", padx=5, pady=2)
-
-        self.scrollbar_frame.grid_columnconfigure(0, weight=1)
-        self.scrollbar_frame.grid_columnconfigure(1, weight=5)
-        self.scrollbar_frame.grid_columnconfigure(2, weight=2)
-        self.scrollbar_frame.grid_columnconfigure(3, weight=2)
-        self.scrollbar_frame.grid_columnconfigure(4, weight=2)
-        self.scrollbar_frame.grid_columnconfigure(5, weight=3)
-        self.scrollbar_frame.grid_columnconfigure(6, weight=1)
-
-        self.scrollbar_frame.update_idletasks()
-        self.canvas.configure(scrollregion=self.canvas.bbox("all"))
-        self.canvas.yview_moveto(0)
+            
+        self.scrollbar_frame.grid_columnconfigure(0, weight=1)  # ID
+        self.scrollbar_frame.grid_columnconfigure(1, weight=5)  # Nombre
+        self.scrollbar_frame.grid_columnconfigure(2, weight=2)  # Costo
+        self.scrollbar_frame.grid_columnconfigure(3, weight=2)  # Precio
+        self.scrollbar_frame.grid_columnconfigure(4, weight=2)  # Stock
+        self.scrollbar_frame.grid_columnconfigure(5, weight=3)  # Vencimiento
+        self.scrollbar_frame.grid_columnconfigure(6, weight=1)  # Acción
+        
+        def refrescar_dimensiones_reales():
+            if hasattr(self, 'canvas') and hasattr(self, 'window_id'):
+                self.scrollbar_frame.update_idletasks()
+                self.canvas.configure(scrollregion=self.canvas.bbox("all"))
+                ancho_canvas = self.canvas.winfo_width()
+                if ancho_canvas > 1:
+                    self.canvas.itemconfig(self.window_id, width=ancho_canvas)
+                    
+        self.after(10, refrescar_dimensiones_reales)
 
     def verificar_alertas_stock(self):
         productos_bajos = ctrl.mostrar_inventario_baja_cantidad()
@@ -181,7 +187,6 @@ class Inventario(tk.Frame):
                 mensaje += f"• {nombre}: Vence el {fecha}\n"
                 
             messagebox.showwarning("Alerta de Sanidad / Inventario", mensaje)
-
 
     def al_abrir_pestana_inventario(self):
         self.cargar_articulos() 
