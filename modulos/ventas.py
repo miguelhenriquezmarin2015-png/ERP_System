@@ -504,17 +504,11 @@ class Ventas(tk.Frame):
         for widget in self.scrollbar_frame.winfo_children():
             widget.destroy()
 
-        headers = ["ID", "N° Factura", "Cliente", "Fecha", "Total General"]
+        headers = ["ID", "N° Factura", "Cliente", "Fecha", "Total General", "Detalles"]
         for col_idx, text in enumerate(headers):
             lbl_header = tk.Label(
-                self.scrollbar_frame,
-                text=text,
-                font=("arial", 16, "bold"),
-                bg="#9FB8C7",
-                fg="black",
-                relief="groove",
-                padx=10,
-                pady=5
+                self.scrollbar_frame, text=text, font=("arial", 15, "bold"),
+                bg="#9FB8C7", fg="black", relief="groove", padx=10, pady=5
             )
             lbl_header.grid(row=0, column=col_idx, sticky="nsew")
 
@@ -525,26 +519,66 @@ class Ventas(tk.Frame):
 
         for row_idx, venta in enumerate(historial_ventas, start=1):
             color_fila = "#E1EBF0" if row_idx % 2 == 0 else "#F4F8FA"
+            
+            id_venta = venta[0]
+            num_factura = venta[1]
 
             for col_idx, valor in enumerate(venta):
                 texto_celda = f"${valor:,.2f}" if col_idx == 4 else valor
                 
                 lbl_dato = tk.Label(
-                    self.scrollbar_frame,
-                    text=texto_celda,
-                    font=("arial", 16),
-                    bg=color_fila,
+                    self.scrollbar_frame, text=texto_celda, font=("arial", 14), bg=color_fila,
                     anchor="center" if col_idx in [0, 1, 3] else ("w" if col_idx == 2 else "e"),
-                    padx=10,
-                    pady=5
+                    padx=10, pady=5
                 )
                 lbl_dato.grid(row=row_idx, column=col_idx, sticky="nsew")
+
+            btn_detalles = tk.Button(
+                self.scrollbar_frame, text="🔍 Ver Productos", font=("arial", 11, "bold"), 
+                bg="#FF9800", fg="white", cursor="hand2",
+                command=lambda id_v=id_venta, f=num_factura: self.ver_detalles_venta(id_v, f)
+            )
+            btn_detalles.grid(row=row_idx, column=5, sticky="nsew", padx=5, pady=2)
 
         self.scrollbar_frame.grid_columnconfigure(0, weight=1)
         self.scrollbar_frame.grid_columnconfigure(1, weight=2)
         self.scrollbar_frame.grid_columnconfigure(2, weight=4)
         self.scrollbar_frame.grid_columnconfigure(3, weight=2)
         self.scrollbar_frame.grid_columnconfigure(4, weight=2)
+        self.scrollbar_frame.grid_columnconfigure(5, weight=2) # Espacio para el botón
+
+    def ver_detalles_venta(self, id_venta, num_factura):
+        top_detalles = tk.Toplevel(self)
+        top_detalles.title(f"Detalles de la Factura: {num_factura}")
+        top_detalles.geometry("600x350+450+150")
+        top_detalles.config(bg="#C6D9E3")
+        top_detalles.grab_set()
+
+        tk.Label(top_detalles, text=f"Productos Vendidos (Factura {num_factura})", font=("arial", 14, "bold"), bg="#C6D9E3").pack(pady=10)
+
+        frame_grid = tk.Frame(top_detalles, bg="white", bd=2, relief="groove")
+        frame_grid.pack(fill="both", expand=True, padx=20, pady=10)
+
+        headers = ["Producto", "Precio Unit.", "Cant.", "Subtotal"]
+        for col_idx, text in enumerate(headers):
+            tk.Label(frame_grid, text=text, font=("arial", 12, "bold"), bg="#9FB8C7", relief="groove", padx=5, pady=5).grid(row=0, column=col_idx, sticky="nsew")
+
+        detalles = ctrl.obtener_detalles_venta(id_venta)
+
+        if not detalles:
+            tk.Label(frame_grid, text="No se encontraron detalles para esta venta.", font=("arial", 12, "italic"), bg="white").grid(row=1, column=0, columnspan=4, pady=20)
+            return
+
+        for r_idx, det in enumerate(detalles, start=1):
+            prod, precio, cant, subtotal = det
+            color_fila = "#F5F5F5" if r_idx % 2 == 0 else "white"
+
+            valores = [prod, f"${float(precio):,.2f}", str(cant), f"${float(subtotal):,.2f}"]
+            for c_idx, val in enumerate(valores):
+                tk.Label(frame_grid, text=val, font=("arial", 11), bg=color_fila, relief="groove", anchor="w" if c_idx==0 else "center", padx=5, pady=4).grid(row=r_idx, column=c_idx, sticky="nsew")
+
+        for i in range(4):
+            frame_grid.grid_columnconfigure(i, weight=1 if i != 0 else 3)
 
     def rotar_y_filtrar(self):
         self.indice_filtro = (self.indice_filtro + 1) % len(self.modos_filtro)
@@ -600,8 +634,8 @@ class Ventas(tk.Frame):
         self.label_stock=tk.Label(labelframe,text="stock:",font="arial 14 bold",bg="#C6D9E3")
         self.label_stock.place(x=540, y=65)
 
-        self.label_precio_unitario = tk.Label(self, text="Precio unitario: $0.00", font="arial 14 bold", bg="#C6D9E3")
-        self.label_precio_unitario.place(x=775, y=40) 
+        self.label_precio_unitario = tk.Label(labelframe, text="Precio unitario: $0.00", font="arial 14 bold", bg="#C6D9E3")
+        self.label_precio_unitario.place(x=680, y=65) 
 
         label_factura=tk.Label(labelframe,text="N° de Factura:",font="arial 14 bold",bg="#C6D9E3")
         label_factura.place(x=780, y=10)

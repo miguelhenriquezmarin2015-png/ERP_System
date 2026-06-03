@@ -1141,3 +1141,19 @@ def obtener_catalogo_completo_por_proveedor(id_proveedor):
         return []
     finally:
         conn.close()
+
+def obtener_detalles_venta(id_venta):
+    conn = conectar()
+    cursor = conn.cursor()
+    try:
+        cursor.execute("SELECT producto, precio, cantidad, subtotal FROM detalle_ventas WHERE id_venta = %s", (id_venta,))
+        return cursor.fetchall()
+    except Exception:
+        try:
+            cursor.execute("SELECT producto, precio_unitario, cantidad, subtotal FROM detalles_ventas WHERE venta_id = %s", (id_venta,))
+            return cursor.fetchall()
+        
+        except Exception:
+            return []
+    finally:
+        conn.close()
