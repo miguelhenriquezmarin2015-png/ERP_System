@@ -112,24 +112,25 @@ class Proveedor(tk.Frame):
             frame_acciones = tk.Frame(self.scrollbar_frame, bg=color_fila, relief="groove", bd=1)
             frame_acciones.grid(row=row_idx, column=4, sticky="nsew")
 
-            def desplegar_menu(b=None, p=prov, id_p=id_prov):
-                menu_popup = tk.Menu(btn_opciones, tearoff=0, font=("arial", 10), bg="white", fg="black", activebackground="#2196F3")
+            def desplegar_menu(b=None, p=None, id_p=None):
+                menu_popup = tk.Menu(b, tearoff=0, font=("arial", 10), bg="white", fg="black", activebackground="#2196F3")
                 
-                menu_popup.add_command(label="📁 Catálogo", command=lambda: self.ver_catalogo_articulos(p))
-                menu_popup.add_command(label="💳 Compras", command=lambda: self.ver_historial_compras(id_p))
+                menu_popup.add_command(label="📂 Catálogo", command=lambda: self.ver_catalogo_articulos(p))
+                menu_popup.add_command(label="📜 Compras", command=lambda: self.ver_historial_compras(id_p))
                 menu_popup.add_command(label="⏳ Pendientes", command=lambda: self.ver_pedidos_pendientes(id_p))
                 
-                x = btn_opciones.winfo_rootx()
-                y = btn_opciones.winfo_rooty() + btn_opciones.winfo_height()
+                x = b.winfo_rootx()
+                y = b.winfo_rooty() + b.winfo_height()
                 menu_popup.post(x, y)
 
             btn_opciones = tk.Button(
                 frame_acciones,
                 text="Opciones ▾",
                 bg="#4A5568", fg="white",
-                font=("arial", 10, "bold"), bd=0, cursor="hand2",
-                command=desplegar_menu 
+                font=("arial", 10, "bold"), bd=0, cursor="hand2"
             )
+            btn_opciones.config(command=lambda b=btn_opciones, p=prov, id_p=id_prov: desplegar_menu(b, p, id_p))
+            
             btn_opciones.pack(side="left", padx=10, pady=5, expand=True)
 
         self.scrollbar_frame.grid_columnconfigure(0, weight=1)
