@@ -1044,7 +1044,8 @@ def procesar_recepcion_pedido(id_pedido, nombre_producto, cantidad_recibida, nue
         nota_historial = f"Recepción de Pedido: {nombre_producto}"
         if motivo_faltante:
             nota_historial += f" (Faltante: {motivo_faltante})"
-
+        cursor.execute("INSERT INTO compras_proveedor (id_proveedor, fecha, total_pagado, detalles) VALUES (%s, NOW(), %s, %s)", 
+                       (id_prov, monto_estimado, nota_historial))
         cursor.execute("UPDATE fondos SET saldo = saldo - %s WHERE nombre = 'Fondo de Reposición'", (monto_estimado,))
 
         nuevo_estado = "Recibido"
