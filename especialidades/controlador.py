@@ -71,7 +71,7 @@ def crear_base_de_datos():
             "CREATE TABLE IF NOT EXISTS usuarios ( id INT AUTO_INCREMENT PRIMARY KEY, username VARCHAR(100) NOT NULL UNIQUE, password VARCHAR(255) NOT NULL, nombre VARCHAR(255), cedula VARCHAR(50), telefono VARCHAR(50), correo VARCHAR(100), rol VARCHAR(50) NOT NULL DEFAULT 'Vendedor', sueldo DECIMAL(10,2) NOT NULL DEFAULT 0.0 )",
             "CREATE TABLE IF NOT EXISTS ventas ( id INT AUTO_INCREMENT PRIMARY KEY, numero_factura VARCHAR(50) NOT NULL UNIQUE, cliente VARCHAR(255) NOT NULL, fecha DATETIME NOT NULL, total DECIMAL(12,2) NOT NULL )",
             "CREATE TABLE IF NOT EXISTS detalles_ventas ( id INT AUTO_INCREMENT PRIMARY KEY, venta_id INT NOT NULL, producto VARCHAR(255) NOT NULL, precio_unitario DECIMAL(10,2) NOT NULL, cantidad INT NOT NULL, subtotal DECIMAL(12,2) NOT NULL, FOREIGN KEY (venta_id) REFERENCES ventas(id) ON DELETE CASCADE )",
-            "CREATE TABLE IF NOT EXISTS inventario ( id INT AUTO_INCREMENT PRIMARY KEY, nombre VARCHAR(255) NOT NULL UNIQUE, costo DECIMAL(10,2) NOT NULL, precio DECIMAL(10,2) NOT NULL, stock INT NOT NULL, perecedero TINYINT(1) NOT NULL DEFAULT 0, vencimiento DATE )",
+            "CREATE TABLE IF NOT EXISTS inventario ( id INT AUTO_INCREMENT PRIMARY KEY, nombre VARCHAR(255) NOT NULL UNIQUE, costo DECIMAL(10,2) NOT NULL, precio DECIMAL(10,2) NOT NULL, stock INT NOT NULL, perecedero TINYINT(1) NOT NULL DEFAULT 0, vencimiento DATE, activo TINYINT(1) NOT NULL DEFAULT 1 )",
             "CREATE TABLE IF NOT EXISTS proveedores ( id INT AUTO_INCREMENT PRIMARY KEY, nombre VARCHAR(255) NOT NULL, rif VARCHAR(50) NOT NULL UNIQUE, contacto VARCHAR(255) NOT NULL )",
             "CREATE TABLE IF NOT EXISTS proveedor_catalogo ( id_proveedor INT NOT NULL, id_producto INT NOT NULL, PRIMARY KEY(id_proveedor, id_producto), FOREIGN KEY(id_proveedor) REFERENCES proveedores(id) ON DELETE CASCADE, FOREIGN KEY(id_producto) REFERENCES inventario(id) ON DELETE CASCADE )",
             "CREATE TABLE IF NOT EXISTS compras_proveedor ( id INT AUTO_INCREMENT PRIMARY KEY, id_proveedor INT NOT NULL, fecha DATETIME NOT NULL, total_pagado DECIMAL(12,2) NOT NULL, detalles TEXT, FOREIGN KEY(id_proveedor) REFERENCES proveedores(id) ON DELETE CASCADE )",
@@ -109,7 +109,16 @@ def guardar_articulo(nombre,costo,precio,stock,perecedero,vencimiento):
     cursor = conn.cursor()
     if vencimiento== 'No Aplica'or not vencimiento:
         vencimiento = None
-    instruccion="INSERT INTO inventario (nombre, costo, precio, stock, perecedero, vencimiento) VALUES (%s,%s,%s,%s,%s,%s)"
+    instruccion="""
+    INSERT INTO inventario (nombre, costo, precio, stock, perecedero, vencimiento, activo) VALUES (%s,%s,%s,%s,%s,%s, 1)
+    ON DUPLICATE KEY UPDATE
+        costo = VALUES(costo),
+        precio = VALUES(precio),
+        stock = stock + VALUES(stock),
+        perecedero = VALUES(perecedero),
+        vencimiento = VALUES(vencimiento),
+        activo = 1;
+    """
     cursor.execute(instruccion, (nombre, costo, precio, stock, perecedero, vencimiento))
     conn.commit()
     conn.close()
@@ -118,7 +127,7 @@ def obtener_articulos():
     conn = conectar()
     cursor = conn.cursor()
     try:
-        query = "SELECT id, nombre, costo, precio, stock, perecedero, vencimiento FROM inventario;"
+        query = "SELECT id, nombre, costo, precio, stock, perecedero, vencimiento FROM inventario WHERE activo = 1;"
         cursor.execute(query)
         return cursor.fetchall()
     except Exception as e:
@@ -131,7 +140,7 @@ def obtener_articulos():
 def buscar_articulo(nombre):
     conn = conectar()
     cursor = conn.cursor()
-    instruccion="SELECT * FROM inventario where nombre LIKE %s"
+    instruccion="SELECT id, nombre, costo, precio, stock, perecedero, vencimiento FROM inventario WHERE nombre LIKE %s AND activo = 1" 
     termino_busqueda = f"%{nombre}%"
     cursor.execute(instruccion, (termino_busqueda,))
     resultado = cursor.fetchall()
@@ -141,7 +150,7 @@ def buscar_articulo(nombre):
 def mostrar_vender(nombre):
     conn = conectar()
     cursor = conn.cursor()
-    instruccion = "SELECT costo, precio, stock FROM inventario WHERE nombre = %s"
+    instruccion = "SELECT costo, precio, stock FROM inventario WHERE nombre = %s AND activo = 1"
     cursor.execute(instruccion, (nombre,))
     resultado = cursor.fetchone()
     conn.close()
@@ -150,7 +159,7 @@ def mostrar_vender(nombre):
 def mostrar_inventario_baja_cantidad():
     conn = conectar()
     cursor = conn.cursor()
-    cursor.execute("SELECT * FROM inventario WHERE stock < 15")
+    cursor.execute("SELECT id, nombre, costo, precio, stock, perecedero, vencimiento FROM inventario WHERE stock < 15 AND activo = 1")
     resultado = cursor.fetchall()
     conn.close()
     return resultado
@@ -165,7 +174,8 @@ def obtener_productos_por_vencer():
             WHERE perecedero = 1 
               AND vencimiento IS NOT NULL 
               AND vencimiento <= DATE_ADD(CURDATE(), INTERVAL 7 DAY)
-              AND vencimiento >= CURDATE();
+              AND vencimiento >= CURDATE()
+              AND activo = 1;
         """
         cursor.execute(query)
         return cursor.fetchall()
@@ -239,7 +249,7 @@ def obtener_stock_actual(nombre_producto):
 def eliminar_articulo(id):
     conn = conectar()
     cursor = conn.cursor()
-    instruccion="DELETE FROM inventario WHERE id=%s"
+    instruccion="UPDATE inventario SET activo = 0 WHERE id = %s"
     cursor.execute(instruccion, (id,))
     conn.commit()
     conn.close()
@@ -514,7 +524,7 @@ def obtener_num_factura():
 def cargar_productos():
     conn = conectar()
     cursor = conn.cursor()
-    cursor.execute("SELECT nombre FROM inventario")
+    cursor.execute("SELECT nombre FROM inventario WHERE activo = 1")
     productos = cursor.fetchall()
     conn.close()
     return [producto[0] for producto in productos]
@@ -522,7 +532,7 @@ def cargar_productos():
 def filtrar_nombre(texto_busqueda):
     conn = conectar()
     cursor = conn.cursor()
-    instruccion = "SELECT nombre FROM inventario WHERE nombre LIKE %s ORDER BY nombre ASC"
+    instruccion = "SELECT nombre FROM inventario WHERE nombre LIKE %s AND activo = 1 ORDER BY nombre ASC"
     termino = f"%{texto_busqueda}%"
     cursor.execute(instruccion, (termino,))
     resultados = cursor.fetchall()
@@ -687,8 +697,8 @@ def agregar_producto_a_catalogo(id_proveedor, nombre, costo, precio, perecedero,
         fecha_sql = None if (vencimiento == "" or vencimiento == "No Aplica") else vencimiento
 
         query_inventario = """
-            INSERT INTO inventario (nombre, costo, precio, stock, perecedero, vencimiento) 
-            VALUES (%s, %s, %s, 0, %s, %s)
+            INSERT INTO inventario (nombre, costo, precio, stock, perecedero, vencimiento, activo) 
+            VALUES (%s, %s, %s, 0, %s, %s, 1)
             ON DUPLICATE KEY UPDATE 
                 costo = VALUES(costo), 
                 precio = VALUES(precio), 
@@ -1035,8 +1045,7 @@ def procesar_recepcion_pedido(id_pedido, nombre_producto, cantidad_recibida, nue
         if motivo_faltante:
             nota_historial += f" (Faltante: {motivo_faltante})"
 
-        cursor.execute("INSERT INTO compras_proveedor (id_proveedor, fecha, total_pagado, detalles) VALUES (%s, NOW(), %s, %s)", 
-                       (id_prov, monto_estimado, nota_historial))
+        cursor.execute("UPDATE fondos SET saldo = saldo - %s WHERE nombre = 'Fondo de Reposición'", (monto_estimado,))
 
         nuevo_estado = "Recibido"
         if motivo_faltante:
@@ -1050,7 +1059,7 @@ def procesar_recepcion_pedido(id_pedido, nombre_producto, cantidad_recibida, nue
         if res:
             nuevo_stock = int(res[0]) + int(cantidad_recibida)
             precio_seguro = float(nuevo_precio)
-            cursor.execute("UPDATE inventario SET stock = %s, precio = %s WHERE nombre = %s", (nuevo_stock, precio_seguro, nombre_producto))
+            cursor.execute("UPDATE inventario SET stock = %s, precio = %s, activo = 1 WHERE nombre = %s", (nuevo_stock, precio_seguro, nombre_producto))
 
         conn.commit()
         return True, "Recepción procesada, contabilizada en Finanzas e Inventario actualizado."
