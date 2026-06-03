@@ -193,7 +193,17 @@ class Proveedor(tk.Frame):
 
             headers = ["ID", "Nombre", "Costo", "Precio", "Stock", "Vencimiento", "Acciones"]
             for col_idx, h_text in enumerate(headers):
-                lbl = tk.Label(frame_grid_sub, text=h_text, font=("arial", 10, "bold"), relief="groove", padx=5, pady=5)
+                lbl = tk.Label(
+                    frame_grid_sub,
+                    text=h_text,
+                    font=("arial", 10, "bold"),
+                    relief="groove",
+                    padx=5,
+                    pady=5,
+                    bg="#9FB8C7",
+                    fg="black",
+                    anchor="center"
+                )
                 lbl.grid(row=0, column=col_idx, sticky="nsew")
 
             productos = ctrl.obtener_catalogo_completo_por_proveedor(id_prov)
@@ -215,7 +225,18 @@ class Proveedor(tk.Frame):
 
                 valores = [id_p, nom, f"${float(cos):.2f}", f"${float(pre):.2f}", stk, venc_text]
                 for c_idx, val in enumerate(valores):
-                    lbl_d = tk.Label(frame_grid_sub, text=val, font=("arial", 10), bg=color_f, relief="groove", padx=5, pady=5)
+                    lbl_d = tk.Label(
+                        frame_grid_sub,
+                        text=val,
+                        font=("arial", 10),
+                        bg=color_f,
+                        relief="groove",
+                        padx=5,
+                        pady=5,
+                        anchor="w" if c_idx == 1 else "center",
+                    )
+                    if c_idx == 1:
+                        lbl_d.config(wraplength=250)
                     lbl_d.grid(row=r_idx, column=c_idx, sticky="nsew")
 
                 btn_ed = tk.Button(
