@@ -69,7 +69,7 @@ class Pedidos(tk.Frame):
 
         # ver saldo
         self.saldo_var = tk.StringVar()
-        saldo_actual = ctrl.obtener_saldo_fondo("Fondo Reposición") 
+        saldo_actual = ctrl.obtener_saldo_fondo("Fondo de Reposición") 
         if isinstance(saldo_actual, tuple) and saldo_actual:
             saldo_num = float(saldo_actual[0])
         elif saldo_actual is not None:
@@ -131,8 +131,10 @@ class Pedidos(tk.Frame):
             widget.destroy()
 
         proveedor_sel = self.entry_proveedor.get().strip()
-        if not proveedor_sel:
+        if not proveedor_sel or "-" not in proveedor_sel:
             return
+
+        id_proveedor = proveedor_sel.split("-")[0].strip()
 
         frame_header = tk.Frame(self.frame_articulos_scroll, bg="#ECEFF1", height=35)
         frame_header.pack(fill="x", padx=5, pady=(2, 5))
@@ -151,8 +153,7 @@ class Pedidos(tk.Frame):
         lbl_acomprar = tk.Label(frame_header, text="Acomprar", font=("arial", 11, "bold"), bg="#ECEFF1", anchor="center")
         lbl_acomprar.pack(side="right", padx=35)
 
-
-        articulos = ctrl.obtener_catalogo_por_proveedor(proveedor_sel)
+        articulos = ctrl.obtener_catalogo_por_proveedor(id_proveedor)
         self.items_pedido = {}
 
         if not articulos:
@@ -319,7 +320,7 @@ class Pedidos(tk.Frame):
             self.lbl_total_orden.config(text=f"Total Estimado: ${total_acumulado:.2f}")
 
     def refrescar_saldo(self):
-        nuevo_saldo = ctrl.obtener_saldo()
+        nuevo_saldo = ctrl.obtener_saldo_fondo()
         
         if isinstance(nuevo_saldo, tuple) and nuevo_saldo:
             saldo_num = float(nuevo_saldo[0]) 
@@ -327,7 +328,7 @@ class Pedidos(tk.Frame):
             saldo_num = float(nuevo_saldo)
         else:
             saldo_num = 0.00
-        self.saldo_var.set(f"Saldo Fondo Reposición: ${saldo_num:,.2f}")
+        self.saldo_var.set(f"Saldo Fondo de Reposición: ${saldo_num:,.2f}")
 
     """def cargar_catalogo_pedido(self, event=None):
     

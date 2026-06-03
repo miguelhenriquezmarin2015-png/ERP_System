@@ -74,7 +74,7 @@ class Finanzas(tk.Frame):
             color_fila = "#F0F4F8" if row_idx % 2 == 0 else "#FFFFFF"
             id_m, tipo, desc, fecha, monto = mov
             
-            color_texto = "#388E3C" if ("Ingreso" in tipo or "inversión" in tipo) else "#D32F2F"
+            color_texto = "#388E3C" if ("Ingreso" in tipo or "Inversión" in tipo) else "#D32F2F"
 
             valores = [tipo, desc, fecha, f"${float(monto):,.2f}"]
             for col_idx, valor in enumerate(valores):
