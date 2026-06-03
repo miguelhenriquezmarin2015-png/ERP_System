@@ -291,15 +291,10 @@ class Pedidos(tk.Frame):
                 mensajes_rutas.append(f"• CSV: {ruta_csv}")
 
             rutas_str = "\n".join(mensajes_rutas)
+            
             messagebox.showinfo("Confirmado", f"{msj}\n\nArchivos generados en Descargas:\n{rutas_str}")
-        
-            self.items_pedido.clear() 
 
-            self.entry_proveedor.set("") 
-
-            self.cargar_catalogo_pedido()
-
-            self.recalcular_total_pedido()
+            self.limpiar_formulario_pedidos()
 
         except Exception as e:
             messagebox.showerror("Error de Exportación", f"Pedido guardado en BD, pero falló la exportación: {e}")
@@ -320,7 +315,7 @@ class Pedidos(tk.Frame):
             self.lbl_total_orden.config(text=f"Total Estimado: ${total_acumulado:.2f}")
 
     def refrescar_saldo(self):
-        nuevo_saldo = ctrl.obtener_saldo_fondo()
+        nuevo_saldo = ctrl.obtener_saldo_fondo("Fondo de Reposición")
         
         if isinstance(nuevo_saldo, tuple) and nuevo_saldo:
             saldo_num = float(nuevo_saldo[0]) 
@@ -329,34 +324,3 @@ class Pedidos(tk.Frame):
         else:
             saldo_num = 0.00
         self.saldo_var.set(f"Saldo Fondo de Reposición: ${saldo_num:,.2f}")
-
-    """def cargar_catalogo_pedido(self, event=None):
-    
-        id_proveedor = self.entry_proveedor.get().split("-")[0].strip() 
-        
-        for widget in self.frame_articulos_scroll.winfo_children():
-            widget.destroy()
-
-        self.lista_productos = ctrl.obtener_catalogo_por_proveedor(id_proveedor)
-        self.entradas_cantidad = {} 
-
-        for idx, prod in enumerate(self.lista_productos):
-            id_p, nombre, costo, precio, stock = prod
-            
-            fila_frame = tk.Frame(self.frame_articulos_scroll, bg="#F0F4F8", pady=5)
-            fila_frame.pack(fill="x", padx=10, pady=2)
-            
-            tk.Label(fila_frame, text=nombre, font=("arial", 11), bg="#F0F4F8", width=30, anchor="w").pack(side="left")
-            tk.Label(fila_frame, text=f"${costo}", font=("arial", 11), bg="#F0F4F8", width=10).pack(side="left")
-            tk.Label(fila_frame, text=f"Stock: {stock}", font=("arial", 11), bg="#F0F4F8", width=10).pack(side="left")
-            
-            entry_cant = tk.Entry(fila_frame, font=("arial", 11), width=8, justify="center")
-            entry_cant.pack(side="right", padx=10)
-            entry_cant.insert(0, "0") 
-            
-            self.entradas_cantidad[id_p] = {
-                "entry": entry_cant,
-                "nombre": nombre,
-                "costo": costo
-            }
-"""

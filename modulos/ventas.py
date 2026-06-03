@@ -288,7 +288,8 @@ class Ventas(tk.Frame):
                 return 
                 
             if diferencia > 0:
-                limite_maximo = self.stock_actual + int(current_cantidad)
+                stock_real_bd = ctrl.obtener_stock_actual(current_producto)
+                limite_maximo = stock_real_bd + int(current_cantidad)
                 if new_cantidad > limite_maximo:
                     messagebox.showerror("Error", f"No hay suficiente stock. Máximo disponible: {limite_maximo}")
                     return

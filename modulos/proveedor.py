@@ -318,12 +318,9 @@ class Proveedor(tk.Frame):
                 def hilo_refresco_inventario():
                     try:
                         pantalla_inventario = None
-                        for llave, instancia_frame in top_cat.controller.frames.items():
-                            if "inventario" in instancia_frame.__class__.__name__.lower():
-                                pantalla_inventario = instancia_frame
-                                break
-                        if pantalla_inventario and hasattr(pantalla_inventario, 'cargar_articulos'):
-                            pantalla_inventario.cargar_articulos()
+                        for instancia_frame in self.master.frames.values():
+                          if instancia_frame.__class__.__name__ == "Inventario" and hasattr(instancia_frame, 'cargar_articulos'):
+                            instancia_frame.cargar_articulos()
                     except Exception as e:
                         print(f"Aviso silencioso: {e}")
 
@@ -509,9 +506,9 @@ class Proveedor(tk.Frame):
                     messagebox.showinfo("Ingreso Confirmado", msj, parent=top_rec)
                     top_rec.destroy()
                     refrescar_pedidos()
-                    for llave, inst in self.controller.frames.items():
-                        if "inventario" in inst.__class__.__name__.lower() and hasattr(inst, 'cargar_articulos'):
-                            inst.cargar_articulos()
+                    for inst in self.master.frames.values():
+                      if inst.__class__.__name__ == "Inventario" and hasattr(inst, 'cargar_articulos'):
+                        inst.cargar_articulos()
                 else:
                     messagebox.showerror("Error", msj, parent=top_rec)
 
